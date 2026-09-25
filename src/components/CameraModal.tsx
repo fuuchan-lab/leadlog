@@ -58,6 +58,8 @@ export function CameraModal({ onCapture, onClose, onPickFile }: Props) {
   const [ready, setReady] = useState(false)
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [deviceId, setDeviceId] = useState<string>('')
+  /** 名刺を横向き（一般的な名刺）・縦向き（縦型の名刺）のどちらで持つか。枠の形をそれに合わせる */
+  const [portrait, setPortrait] = useState(false)
 
   const stop = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop())
@@ -113,8 +115,16 @@ export function CameraModal({ onCapture, onClose, onPickFile }: Props) {
     canvas.height = h
     canvas.getContext('2d')!.drawImage(video, 0, 0, w, h)
     // 枠の位置（プレビューは左右反転しているが、枠は中央なので同じ位置）
-    const gw = w * GUIDE_WIDTH
-    const gh = Math.min(h * 0.9, gw / CARD_RATIO)
+    // 横向きの名刺は幅を基準に、縦向きの名刺は高さを基準に、枠の大きさを決める
+    let gw: number
+    let gh: number
+    if (portrait) {
+      gh = Math.min(h * 0.9, w * 0.9 * CARD_RATIO)
+      gw = gh / CARD_RATIO
+    } else {
+      gw = w * GUIDE_WIDTH
+      gh = Math.min(h * 0.9, gw / CARD_RATIO)
+    }
     const x0 = (w - gw) / 2
     const y0 = (h - gh) / 2
     const guide: Quad = [
@@ -159,6 +169,15 @@ export function CameraModal({ onCapture, onClose, onPickFile }: Props) {
           </div>
           <p className="muted small">{t('camera.help')}</p>
         </div>
+        {/* 名刺の向き（横向き・縦向き）に合わせて、枠の形を切り替える */}
+        <div className="seg-tabs camera-orientation" role="tablist">
+          <button type="button" role="tab" aria-selected={!portrait} className={portrait ? '' : 'on'} onClick={() => setPortrait(false)}>
+            ▭ {t('camera.landscape')}
+          </button>
+          <button type="button" role="tab" aria-selected={portrait} className={portrait ? 'on' : ''} onClick={() => setPortrait(true)}>
+            ▯ {t('camera.portrait')}
+          </button>
+        </div>
         {error ? (
           <div className="banner banner-warning" role="alert">
             {t('camera.failed')}
@@ -170,7 +189,14 @@ export function CameraModal({ onCapture, onClose, onPickFile }: Props) {
         ) : (
           <div className="camera-stage">
             <video ref={videoRef} className="camera-video" playsInline muted />
-            <div className="camera-guide" style={{ width: `${GUIDE_WIDTH * 100}%`, aspectRatio: `${CARD_RATIO}` }} />
+            <div
+              className="camera-guide"
+              style={
+                portrait
+                  ? { height: `${GUIDE_WIDTH * 100}%`, aspectRatio: `${1 / CARD_RATIO}` }
+                  : { width: `${GUIDE_WIDTH * 100}%`, aspectRatio: `${CARD_RATIO}` }
+              }
+            />
             {!ready && <p className="camera-loading">{t('camera.starting')}</p>}
           </div>
         )}

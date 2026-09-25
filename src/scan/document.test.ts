@@ -187,6 +187,11 @@ test('斜めに置いた名刺（30度）の四隅を見つける', () => {
   assertNear(detectDocument(scene(320, 240, [50, 50, 55], [235, 235, 230], card)), card, 5)
 })
 
+test('縦向き（ポートレート）の名刺も見つける', () => {
+  const card = rotatedRect(160, 120, 100, 166, -6) // 91×55mm の名刺を縦向きに置いた比率
+  assertNear(detectDocument(scene(320, 240, [60, 65, 70], [238, 236, 230], card)), card, 5)
+})
+
 test('明るさが近くても、背景と色が違えば見つける（青い机の上のベージュの名刺）', () => {
   const card = rotatedRect(160, 120, 190, 110, -8)
   assertNear(detectDocument(scene(320, 240, [70, 110, 190], [190, 170, 120], card)), card, 5)

@@ -2146,6 +2146,9 @@ input[type='datetime-local'] {
   /* 鏡のように左右反転して表示する（撮った画像は反転しない） */
   transform: scaleX(-1);
 }
+.camera-orientation {
+  margin-bottom: 4px;
+}
 .camera-guide {
   position: absolute;
   left: 50%;

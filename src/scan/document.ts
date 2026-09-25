@@ -67,6 +67,9 @@ export function otsuThreshold(gray: Uint8Array): number {
  * どれも、中央に最も近いかたまりを名刺とみなし、名刺の文字などでできた穴は埋め、
  * かたまりの外形（凸包）に最もよく合う四角形を四隅とする（斜めに置いた名刺にも合う）。
  */
+/** 名刺（91×55mm）の縦横比。長辺÷短辺 */
+const CARD_ASPECT = 91 / 55
+
 export function detectDocument(img: RGBAImage): Quad | null {
   const { width, height } = img
   const gray = toGray(img)
@@ -80,14 +83,14 @@ export function detectDocument(img: RGBAImage): Quad | null {
 
   // 2. 背景（外周）の色との違いで分ける
   const bg = borderMeanColor(img)
-  const dist = new Uint8Array(gray.length)
-  for (let i = 0, p = 0; i < dist.length; i++, p += 4) {
+  const colorDist = new Uint8Array(gray.length)
+  for (let i = 0, p = 0; i < colorDist.length; i++, p += 4) {
     const d = Math.hypot(img.data[p] - bg[0], img.data[p + 1] - bg[1], img.data[p + 2] - bg[2])
-    dist[i] = Math.min(255, Math.round(d))
+    colorDist[i] = Math.min(255, Math.round(d))
   }
-  const td = Math.max(20, otsuThreshold(dist))
+  const td = Math.max(20, otsuThreshold(colorDist))
   const colorMask = new Uint8Array(gray.length)
-  for (let i = 0; i < dist.length; i++) colorMask[i] = dist[i] > td ? 1 : 0
+  for (let i = 0; i < colorDist.length; i++) colorMask[i] = colorDist[i] > td ? 1 : 0
   masks.push(colorMask)
 
   // 3. 輪郭で囲まれた部分。外周からたどれない（輪郭で囲まれた）所を名刺の側とする
@@ -120,7 +123,13 @@ export function detectDocument(img: RGBAImage): Quad | null {
     if (rect < 0.8) continue
     // 四辺が輪郭に重なっている割合（いちばん弱い辺も重視する）
     const support = edgeSupport(quad, grad.mag, width, height, supportThreshold)
-    const score = support.mean * 0.6 + support.min * 0.4 + rect * 0.3 + ratio * 0.15
+    // 名刺（91×55mm）の縦横比に近いほど加点する。バッジなど比率が違う場合もあるので、決めつけすぎない強さにする。
+    // 背景をぼかすカメラの効果などで、人の腕や輪郭が輪郭検出の候補に混ざった時、名刺らしくない細長い形を選びにくくする
+    const w = (dist(quad[0], quad[1]) + dist(quad[3], quad[2])) / 2
+    const h = (dist(quad[0], quad[3]) + dist(quad[1], quad[2])) / 2
+    const aspect = Math.max(w, h) / Math.max(1, Math.min(w, h))
+    const aspectFit = 1 / (1 + Math.abs(aspect - CARD_ASPECT))
+    const score = support.mean * 0.6 + support.min * 0.4 + rect * 0.3 + aspectFit * 0.4
     candidates.push({ quad, score, area: qa, support })
   }
   if (candidates.length === 0) return null
