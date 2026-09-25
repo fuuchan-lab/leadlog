@@ -9,11 +9,11 @@ import { createTokenWaiter } from './tokenWaiter.ts'
 export const driveConfig = {
   // 保存先のフォルダー名。言語に関わらず同じ。同じアカウントでログインした全端末が、このフォルダーに集約する
   folderName: 'Exhibition_LeadLog',
-  // 公開されるクライアントID（秘密ではない）。CapLog と同じ OAuth クライアントを使う。
+  // 公開されるクライアントID（秘密ではない）。Google Cloud のプロジェクト「LeadLog」の OAuth クライアント「LeadLog Web」。
   // 別のクライアントを使う場合は .env.local の VITE_GOOGLE_CLIENT_ID で上書きする。
   clientId:
     (import.meta.env?.VITE_GOOGLE_CLIENT_ID as string | undefined) ||
-    '62584118958-jp6hctllnodp26q1o686eemhi37gttnc.apps.googleusercontent.com',
+    '942895331241-pjiplv9bi1but307aia3ansjp2d71ro0.apps.googleusercontent.com',
   scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile',
 }
 

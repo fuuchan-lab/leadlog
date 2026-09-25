@@ -5,8 +5,9 @@ TWA は端末の Chrome で動くので、Google ログイン（ポップアッ�
 
 ## 公開前にやること
 
-1. 公開先を決める（例: `https://leadlog.doitmyself.net/`）。GitHub Pages ＋独自ドメインの場合は、`public/CNAME` を置く。
-2. Google Cloud Console の OAuth クライアントの「承認済みの JavaScript 生成元」に、公開先の URL を追加する。
+1. 公開先: `https://leadlog.doitmyself.net/`（`public/CNAME` 済み。Value-Domain で CNAME `leadlog` → `fuuchan-lab.github.io` を設定する）
+2. OAuth クライアント（プロジェクト「LeadLog」）の「承認済みの JavaScript 生成元」に公開先を登録済み。
+   多くの人に使ってもらう場合は、OAuth 同意画面を「本番環境」に切り替える（テスト中はテストユーザーだけがログインできる）。
 3. アイコンは用意済み（`public/icon-*.png`・`icon-maskable-*.png`・`apple-touch-icon.png`・favicon）。
 4. プライバシーポリシー（`public/privacy.html`）の内容・連絡先を確認する。
 5. ストア用の画像（フィーチャーグラフィック 1024×500、スクリーンショット）を用意する。
@@ -14,7 +15,7 @@ TWA は端末の Chrome で動くので、Google ログイン（ポップアッ�
 ## アプリ本体（AAB）の作り方
 
 頭痛ログの `docs/play-store.md` と同じ手順（PWABuilder → Android → 署名鍵の作成 → `public/.well-known/assetlinks.json` で紐づけ）。
-パッケージ名の案: `net.doitmyself.exhibitionleadlog`
+パッケージ名の案: `net.doitmyself.leadlog`
 
 ## 社内だけで配る場合
 

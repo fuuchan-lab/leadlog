@@ -40,7 +40,11 @@ npm run lint     # oxlint
 npm run build    # dist/ に出力
 ```
 
-Google ログインには、OAuth クライアントの「承認済みの JavaScript 生成元」に公開先の URL（と `http://localhost:5173`）の登録が必要です。
-既定では CapLog・頭痛ログと同じクライアント ID を使います。別のクライアントを使う場合は `.env.example` を参照してください。
+公開先: https://leadlog.doitmyself.net/ （GitHub Pages ＋ Value-Domain の CNAME。`public/CNAME`）
+
+Google ログインは、Google Cloud のプロジェクト「LeadLog」の OAuth クライアント「LeadLog Web」を使います（`src/drive.ts`）。
+「承認済みの JavaScript 生成元」には `https://leadlog.doitmyself.net`・`https://fuuchan-lab.github.io`・`http://localhost:5173`・`http://localhost:4173` を登録済み。
+OAuth 同意画面が「テスト中」の間は、テストユーザーに登録したアカウントだけがログインできます。
+別のクライアントを使う場合は `.env.example` を参照してください。
 
 Android アプリとしての公開手順は [docs/android.md](docs/android.md) を参照してください。
