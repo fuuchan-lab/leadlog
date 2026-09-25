@@ -52,13 +52,16 @@ export function ScanModal({ image, initialQuad, found, onApply, onClose, onRetak
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card scan-card" role="dialog" aria-modal="true" aria-labelledby="scan-title" onClick={(e) => e.stopPropagation()}>
-        <div className="row">
-          <h2 id="scan-title">{t('scan.title')}</h2>
-          <button className="link" onClick={onClose} aria-label={t('common.close')}>
-            ✕
-          </button>
+        {/* 見出しと説明の間はつめる */}
+        <div className="scan-head">
+          <div className="row">
+            <h2 id="scan-title">{t('scan.title')}</h2>
+            <button className="link" onClick={onClose} aria-label={t('common.close')}>
+              ✕
+            </button>
+          </div>
+          <p className="muted small">{t('scan.help')}</p>
         </div>
-        <p className="muted small">{t('scan.help')}</p>
         {!found && <p className="banner banner-caution">{t('scan.notFound')}</p>}
         <div className="scan-stage">
           <img src={src} alt="" className="scan-image" />
@@ -89,22 +92,22 @@ export function ScanModal({ image, initialQuad, found, onApply, onClose, onRetak
             ))}
           </svg>
         </div>
-        {/* 写真が悪い時のため、写真のすぐ下に「再撮影」 */}
-        <button className="secondary retake-button" onClick={onRetake}>
-          {t('scan.retake')}
-        </button>
-        <div className="row scan-actions">
-          <span>
-            <button className="secondary" onClick={() => setRotation((v) => (v + 1) % 4)}>
-              {t('scan.rotate')}
-              {rotation > 0 && ` ${rotation * 90}°`}
-            </button>{' '}
-            <button className="secondary" onClick={() => setQuad(defaultQuad(image.width, image.height, 0))}>
-              {t('scan.reset')}
-            </button>
-          </span>
+        {/* 写真のすぐ下に、左「再撮影」（写真が悪い時）・右「この範囲で読み取る」を横並びで */}
+        <div className="scan-main-actions">
+          <button className="secondary" onClick={onRetake}>
+            {t('scan.retake')}
+          </button>
           <button className="primary" onClick={() => onApply(quad, rotation)}>
             {t('scan.apply')}
+          </button>
+        </div>
+        <div className="scan-tools">
+          <button className="secondary" onClick={() => setRotation((v) => (v + 1) % 4)}>
+            {t('scan.rotate')}
+            {rotation > 0 && ` ${rotation * 90}°`}
+          </button>
+          <button className="secondary" onClick={() => setQuad(defaultQuad(image.width, image.height, 0))}>
+            {t('scan.reset')}
           </button>
         </div>
       </div>

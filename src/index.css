@@ -2046,3 +2046,26 @@ input[type='datetime-local'] {
   border-radius: 8px;
   padding: 3px 6px;
 }
+
+/* 撮影後の範囲合わせ: 見出しと説明はつめ、写真の下に「再撮影」「この範囲で読み取る」を横並び */
+.scan-head p {
+  margin: 2px 0 0;
+}
+.scan-main-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.scan-main-actions button {
+  min-height: 48px;
+  font-weight: 700;
+}
+.scan-tools {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.scan-tools button {
+  font-size: 0.85rem;
+  min-height: 36px;
+}
