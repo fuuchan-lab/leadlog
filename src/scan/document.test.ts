@@ -4,6 +4,7 @@ import {
   applyHomography,
   detectDocument,
   detectQuad,
+  refineQuad,
   enhanceDocument,
   homography,
   outputSize,
@@ -36,7 +37,8 @@ test('名刺の四隅を見つける', () => {
       { x: 141, y: 79 },
       { x: 42, y: 79 },
     ],
-    2,
+    // 小さい画像での大まかな検出（正確な位置は refineQuad で合わせ直す）
+    4,
   )
 })
 
@@ -207,4 +209,25 @@ test('影で背景の明るさにムラがあっても見つける', () => {
     }
   }
   assertNear(detectDocument(img), card, 6)
+})
+
+test('四隅を大きい画像で合わせ直すと、1.5 画素以内に合う（縁に色の帯がある名刺も、帯の外側の縁に合わせる）', () => {
+  const card = rotatedRect(500, 380, 560, 340, 9)
+  const img = scene(1000, 760, [70, 60, 50], [245, 245, 240], card)
+  // 左の縁に緑の帯（名刺の一部）を入れる
+  const [tl, , , bl] = card
+  for (let y = 0; y < 760; y++) {
+    for (let x = 0; x < 1000; x++) {
+      const t = ((x - tl.x) * (bl.y - tl.y) - (y - tl.y) * (bl.x - tl.x)) / Math.hypot(bl.x - tl.x, bl.y - tl.y)
+      const p = (y * 1000 + x) * 4
+      if (img.data[p] === 245 && t < 0 && t > -24) {
+        img.data[p] = 15
+        img.data[p + 1] = 118
+        img.data[p + 2] = 110
+      }
+    }
+  }
+  // 大まかな四隅（10 画素ほどずれている）から合わせ直す
+  const rough = card.map((p, i) => ({ x: p.x + (i % 2 ? 8 : -9), y: p.y + (i < 2 ? 7 : -6) })) as Quad
+  assertNear(refineQuad(img, rough), card, 1.5)
 })

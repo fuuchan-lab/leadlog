@@ -59,10 +59,12 @@ export function otsuThreshold(gray: Uint8Array): number {
 /**
  * 写真の中の名刺・バッジの四隅を探す（小さく縮めた画像で使う）。見つからなければ null。
  *
- * 名刺と背景の見分け方を2通り試し、いちばん「四角らしい」ものを選ぶ:
+ * 名刺と背景の見分け方を3通り試し、候補の四角形のうち、四辺が写真の「輪郭（明るさが急に変わる所）」に
+ * いちばんよく重なるものを選ぶ:
  * - 明るさ（白い名刺と暗い机など）
  * - 背景の色との違い（写真の外周の色を背景とみなす。明るさが近くても色が違えば分かれる）
- * どちらも、中央に最も近いかたまりを名刺とみなし、名刺の文字などでできた穴は埋め、
+ * - 輪郭（白い机の上の白い名刺など、明るさも色も近い場合。名刺の縁の影や段差で囲まれた部分）
+ * どれも、中央に最も近いかたまりを名刺とみなし、名刺の文字などでできた穴は埋め、
  * かたまりの外形（凸包）に最もよく合う四角形を四隅とする（斜めに置いた名刺にも合う）。
  */
 export function detectDocument(img: RGBAImage): Quad | null {
@@ -88,7 +90,19 @@ export function detectDocument(img: RGBAImage): Quad | null {
   for (let i = 0; i < dist.length; i++) colorMask[i] = dist[i] > td ? 1 : 0
   masks.push(colorMask)
 
-  let best: { quad: Quad; score: number } | null = null
+  // 3. 輪郭で囲まれた部分。外周からたどれない（輪郭で囲まれた）所を名刺の側とする
+  const grad = gradients(img)
+  const edgeThreshold = Math.max(12, percentileOf(grad.mag, 0.9))
+  const edges = new Uint8Array(gray.length)
+  for (let i = 0; i < edges.length; i++) edges[i] = grad.mag[i] > edgeThreshold ? 1 : 0
+  const walls = dilate(edges, width, height, 1)
+  // 輪郭の線の太さの分だけ少し大きめになるが、四隅は後で refineQuad が正確に合わせ直す
+  masks.push(invert(reachableFromBorder(walls, width, height)))
+
+  // 輪郭と重なっているかを見る時の、輪郭の強さの基準（背景の模様より強い、はっきりした輪郭）
+  const supportThreshold = Math.max(10, percentileOf(grad.mag, 0.8))
+
+  const candidates: { quad: Quad; score: number; area: number; support: { mean: number; min: number } }[] = []
   for (const raw of masks) {
     // 名刺の縁まである文字などの小さなすき間を埋めてから（閉じる）、
     // 細いつながり（名刺と背景の境目のかすれ・影）を切り、小さな点を消す（開く）
@@ -99,16 +113,266 @@ export function detectDocument(img: RGBAImage): Quad | null {
     const ratio = found.area / (width * height)
     if (ratio < 0.08 || ratio > 0.95) continue
     const quad = quadFromHull(found.hull)
-    if (!quad) continue
+    if (!quad || !plausibleQuad(quad, width, height)) continue
     const qa = quadArea(quad)
-    if (qa < width * height * 0.05) continue
     // かたまりの面積と四角形の面積が近いほど「四角らしい」
     const rect = Math.min(found.area, qa) / Math.max(found.area, qa)
-    if (rect < 0.85) continue
-    const score = rect + ratio * 0.2
-    if (!best || score > best.score) best = { quad, score }
+    if (rect < 0.8) continue
+    // 四辺が輪郭に重なっている割合（いちばん弱い辺も重視する）
+    const support = edgeSupport(quad, grad.mag, width, height, supportThreshold)
+    const score = support.mean * 0.6 + support.min * 0.4 + rect * 0.3 + ratio * 0.15
+    candidates.push({ quad, score, area: qa, support })
   }
-  return best?.quad ?? null
+  if (candidates.length === 0) return null
+  candidates.sort((a, b) => b.score - a.score)
+  let best = candidates[0]
+  // 名刺の縁に色の帯がある場合、帯の内側の境目も強い輪郭なので、帯を除いた少し小さい四角形が選ばれやすい。
+  // いちばんの候補をすっぽり囲む少し大きい候補も、輪郭によく重なっていれば、そちらを名刺の外形とする
+  for (const c of candidates.slice(1)) {
+    const grow = c.area / best.area
+    if (grow < 1.02 || grow > 1.35) continue
+    if (c.support.mean < 0.8 || c.support.min < 0.6) continue
+    if (!best.quad.every((p) => insideQuad(c.quad, p, Math.sqrt(best.area) * 0.02))) continue
+    best = c
+  }
+  return best.quad
+}
+
+/** 点 p が四角形 q の内側（tolerance だけ外にはみ出してもよい）にあるか */
+function insideQuad(q: Quad, p: Point, tolerance: number): boolean {
+  for (let i = 0; i < 4; i++) {
+    const a = q[i]
+    const b = q[(i + 1) % 4]
+    const len = Math.hypot(b.x - a.x, b.y - a.y) || 1
+    // 時計回りの四角形では、内側は辺の進む向きの右手（画像の座標）
+    const side = ((b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x)) / len
+    if (side < -tolerance) return false
+  }
+  return true
+}
+
+/**
+ * 色の変わり目の強さ（0〜255 程度）。赤・緑・青のそれぞれで 3×3 のぼかしの後に Sobel フィルターをかけ、
+ * いちばん強いものを使う（明るさが同じでも色が違う境目、例えば青い帯と暗い机の境目も見つけられるように）
+ */
+export function gradients(img: RGBAImage): { mag: Float32Array } {
+  const { data, width, height } = img
+  const n = width * height
+  const mag = new Float32Array(n)
+  const channel = new Uint8Array(n)
+  for (let c = 0; c < 3; c++) {
+    for (let i = 0; i < n; i++) channel[i] = data[i * 4 + c]
+    const blur = boxBlur(channel, width, height, 1)
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        const i = y * width + x
+        const a = blur[i - width - 1]
+        const b = blur[i - width]
+        const cc = blur[i - width + 1]
+        const d = blur[i - 1]
+        const f = blur[i + 1]
+        const g = blur[i + width - 1]
+        const h = blur[i + width]
+        const k = blur[i + width + 1]
+        const sx = cc + 2 * f + k - (a + 2 * d + g)
+        const sy = g + 2 * h + k - (a + 2 * b + cc)
+        const m = Math.hypot(sx, sy) / 4
+        if (m > mag[i]) mag[i] = m
+      }
+    }
+  }
+  return { mag }
+}
+
+function percentileOf(values: Float32Array, q: number): number {
+  // 0〜255 程度の値なので、ヒストグラムで求める
+  const bins = new Uint32Array(1024)
+  for (const v of values) bins[Math.min(1023, Math.floor(v * 4))]++
+  const target = values.length * q
+  let acc = 0
+  for (let i = 0; i < bins.length; i++) {
+    acc += bins[i]
+    if (acc >= target) return i / 4
+  }
+  return 255
+}
+
+/** 外周から、壁（印の付いた画素）を通らずにたどれる画素に印を付ける */
+function reachableFromBorder(walls: Uint8Array, width: number, height: number): Uint8Array {
+  const out = new Uint8Array(walls.length)
+  const stack: number[] = []
+  const seed = (i: number) => {
+    if (!out[i] && !walls[i]) {
+      out[i] = 1
+      stack.push(i)
+    }
+  }
+  for (let x = 0; x < width; x++) {
+    seed(x)
+    seed((height - 1) * width + x)
+  }
+  for (let y = 0; y < height; y++) {
+    seed(y * width)
+    seed(y * width + width - 1)
+  }
+  while (stack.length > 0) {
+    const i = stack.pop()!
+    const x = i % width
+    const y = (i - x) / width
+    if (x > 0) seed(i - 1)
+    if (x < width - 1) seed(i + 1)
+    if (y > 0) seed(i - width)
+    if (y < height - 1) seed(i + width)
+  }
+  return out
+}
+
+/** 名刺らしい四角形か（角度が極端でない・細長すぎない・写真からはみ出していない） */
+function plausibleQuad(q: Quad, width: number, height: number): boolean {
+  if (quadArea(q) < width * height * 0.05) return false
+  for (const p of q) if (p.x < -2 || p.y < -2 || p.x > width + 1 || p.y > height + 1) return false
+  for (let i = 0; i < 4; i++) {
+    const a = q[(i + 3) % 4]
+    const b = q[i]
+    const c = q[(i + 1) % 4]
+    const v1 = { x: a.x - b.x, y: a.y - b.y }
+    const v2 = { x: c.x - b.x, y: c.y - b.y }
+    const cos = (v1.x * v2.x + v1.y * v2.y) / (Math.hypot(v1.x, v1.y) * Math.hypot(v2.x, v2.y) || 1)
+    const deg = (Math.acos(Math.max(-1, Math.min(1, cos))) * 180) / Math.PI
+    if (deg < 45 || deg > 135) return false
+  }
+  const w = (dist(q[0], q[1]) + dist(q[3], q[2])) / 2
+  const h = (dist(q[0], q[3]) + dist(q[1], q[2])) / 2
+  const aspect = Math.max(w, h) / Math.max(1, Math.min(w, h))
+  return aspect < 4
+}
+
+/** 四角形の各辺のうち、輪郭（明るさの変わり目）に重なっている割合 */
+function edgeSupport(q: Quad, mag: Float32Array, width: number, height: number, threshold: number) {
+  const perSide: number[] = []
+  for (let i = 0; i < 4; i++) {
+    const a = q[i]
+    const b = q[(i + 1) % 4]
+    const len = dist(a, b)
+    const n = Math.max(8, Math.round(len / 3))
+    // 辺に直角な向き（1画素分）
+    const nx = -(b.y - a.y) / (len || 1)
+    const ny = (b.x - a.x) / (len || 1)
+    let hit = 0
+    for (let k = 1; k < n; k++) {
+      const x = a.x + ((b.x - a.x) * k) / n
+      const y = a.y + ((b.y - a.y) * k) / n
+      let m = 0
+      for (let o = -2; o <= 2; o++) {
+        const xx = Math.round(x + nx * o)
+        const yy = Math.round(y + ny * o)
+        if (xx < 0 || yy < 0 || xx >= width || yy >= height) continue
+        m = Math.max(m, mag[yy * width + xx])
+      }
+      if (m > threshold) hit++
+    }
+    perSide.push(hit / (n - 1))
+  }
+  return { mean: perSide.reduce((x, y) => x + y, 0) / 4, min: Math.min(...perSide) }
+}
+
+/**
+ * 四隅を、より大きい画像で正確に合わせ直す。各辺の近く（辺に直角に ±range 画素）で明るさの変わり目が
+ * いちばん強い所を探し、その点の並びに直線を当てはめ、隣り合う辺の直線の交点を新しい四隅とする。
+ * うまく当てはまらない辺は、元のまま
+ */
+export function refineQuad(img: RGBAImage, quad: Quad): Quad {
+  const { width, height } = img
+  const { mag } = gradients(img)
+  const size = Math.max(width, height)
+  const range = Math.max(4, Math.round(size * 0.02))
+  const lines: ({ px: number; py: number; dx: number; dy: number } | null)[] = []
+  for (let i = 0; i < 4; i++) {
+    const a = quad[i]
+    const b = quad[(i + 1) % 4]
+    const len = dist(a, b)
+    if (len < 10) {
+      lines.push(null)
+      continue
+    }
+    const ux = (b.x - a.x) / len
+    const uy = (b.y - a.y) / len
+    // 外向き（時計回りの四角形では、進む向きの左手が外側）
+    const nx = uy
+    const ny = -ux
+    const pts: { x: number; y: number }[] = []
+    const n = Math.max(12, Math.round(len / 4))
+    // 角の近くは、隣の辺の輪郭が混ざるので使わない
+    for (let k = Math.round(n * 0.1); k <= Math.round(n * 0.9); k++) {
+      const cx = a.x + ((b.x - a.x) * k) / n
+      const cy = a.y + ((b.y - a.y) * k) / n
+      const mags: number[] = []
+      for (let o = -range; o <= range; o++) {
+        const xx = Math.round(cx + nx * o)
+        const yy = Math.round(cy + ny * o)
+        mags.push(xx < 1 || yy < 1 || xx >= width - 1 || yy >= height - 1 ? 0 : mag[yy * width + xx])
+      }
+      const bestM = Math.max(...mags)
+      if (bestM <= 8) continue
+      // いちばん強い所に近い強さの変わり目のうち、いちばん外側（名刺の縁）を選ぶ
+      // （名刺の内側の色の帯や文字に吸い寄せられないように）
+      let k2 = mags.length - 1
+      while (k2 > 0 && mags[k2] < bestM * 0.75) k2--
+      // 外側へ山を登りきった所（変わり目の真ん中）
+      while (k2 + 1 < mags.length && mags[k2 + 1] > mags[k2]) k2++
+      const o = k2 - range
+      pts.push({ x: cx + nx * o, y: cy + ny * o })
+    }
+    lines.push(pts.length >= 6 ? fitLine(pts) : null)
+  }
+  const out = quad.map((p) => ({ ...p })) as Quad
+  for (let i = 0; i < 4; i++) {
+    // 角 i は、辺 i-1（前の角から角 i）と辺 i（角 i から次の角）の交点
+    const l1 = lines[(i + 3) % 4]
+    const l2 = lines[i]
+    if (!l1 || !l2) continue
+    const p = intersect(l1, l2)
+    // 大きく動く（当てはめの失敗）場合は、元のまま
+    if (p && dist(p, quad[i]) < range * 2.5) out[i] = p
+  }
+  return out
+}
+
+/** 点の並びに直線を当てはめる（最小二乗。外れた点を除いてもう一度） */
+function fitLine(pts: { x: number; y: number }[]) {
+  const fit = (ps: { x: number; y: number }[]) => {
+    const n = ps.length
+    const mx = ps.reduce((s, p) => s + p.x, 0) / n
+    const my = ps.reduce((s, p) => s + p.y, 0) / n
+    let sxx = 0
+    let syy = 0
+    let sxy = 0
+    for (const p of ps) {
+      sxx += (p.x - mx) ** 2
+      syy += (p.y - my) ** 2
+      sxy += (p.x - mx) * (p.y - my)
+    }
+    // 主成分の向き
+    const angle = 0.5 * Math.atan2(2 * sxy, sxx - syy)
+    return { px: mx, py: my, dx: Math.cos(angle), dy: Math.sin(angle) }
+  }
+  let line = fit(pts)
+  for (let iter = 0; iter < 2; iter++) {
+    const d = pts.map((p) => Math.abs((p.x - line.px) * line.dy - (p.y - line.py) * line.dx))
+    const sorted = [...d].sort((a, b) => a - b)
+    const cut = Math.max(1.5, sorted[Math.floor(sorted.length * 0.7)] * 1.5)
+    const kept = pts.filter((_, i) => d[i] <= cut)
+    if (kept.length < 6) break
+    line = fit(kept)
+  }
+  return line
+}
+
+function intersect(a: { px: number; py: number; dx: number; dy: number }, b: { px: number; py: number; dx: number; dy: number }): Point | null {
+  const den = a.dx * b.dy - a.dy * b.dx
+  if (Math.abs(den) < 1e-6) return null
+  const t = ((b.px - a.px) * b.dy - (b.py - a.py) * b.dx) / den
+  return { x: a.px + a.dx * t, y: a.py + a.dy * t }
 }
 
 /** 以前の呼び方（グレーの画像だけで探す）。明るさだけで判定する */

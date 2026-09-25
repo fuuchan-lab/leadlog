@@ -2,6 +2,7 @@
 import {
   defaultQuad,
   detectDocument,
+  refineQuad,
   enhanceDocument,
   outputSize,
   rotate90,
@@ -15,6 +16,8 @@ import {
 const LOAD_MAX_SIDE = 2400
 /** 四隅を探す時の長辺。小さくして速くする */
 const DETECT_MAX_SIDE = 360
+/** 見つけた四隅を、正確に合わせ直す時の長辺 */
+const REFINE_MAX_SIDE = 1000
 
 function newCanvas(width: number, height: number): HTMLCanvasElement {
   const c = document.createElement('canvas')
@@ -53,7 +56,12 @@ export function findDocument(img: RGBAImage): { quad: Quad; found: boolean } {
   const h = Math.max(1, Math.round(img.height * s))
   const small = s < 1 ? readPixels(toCanvas(img), w, h) : img
   const quad = detectDocument(small)
-  return quad ? { quad: scaleQuad(quad, 1 / s), found: true } : { quad: defaultQuad(img.width, img.height), found: false }
+  if (!quad) return { quad: defaultQuad(img.width, img.height), found: false }
+  // 小さい画像で見つけた四隅を、大きめの画像で名刺の縁にぴったり合わせ直す
+  const sm = Math.min(1, REFINE_MAX_SIDE / Math.max(img.width, img.height))
+  const mid = sm < 1 ? readPixels(toCanvas(img), Math.round(img.width * sm), Math.round(img.height * sm)) : img
+  const refined = refineQuad(mid, scaleQuad(quad, sm / s))
+  return { quad: scaleQuad(refined, 1 / sm), found: true }
 }
 
 /** 四隅の範囲を長方形に直し、書類のように整え、向きを直す */
