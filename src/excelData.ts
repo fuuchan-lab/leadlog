@@ -10,6 +10,7 @@ import { authorLabel } from './device.ts'
 import type { Lang, TFn } from './i18n/context.ts'
 import { prefectureInEnglish } from './scan/extract.ts'
 import { categoryLabel, visibleCategories, type SharedSettings } from './settings.ts'
+import type { Exhibition } from './exhibitions.ts'
 import { buildDashboard } from './stats.ts'
 import type { Lead } from './types.ts'
 
@@ -78,6 +79,8 @@ const H = (ja: string, en: string) => `${ja}\n${en}`
 export function leadsSheet(
   leads: Lead[],
   settings: SharedSettings,
+  /** 1つの展示会を書き出す場合はその展示会（タイトルに使う）。すべての展示会なら null */
+  ex: Exhibition | null,
   t: TFn,
   lang: Lang,
   duplicates: Set<string>,
@@ -87,7 +90,6 @@ export function leadsSheet(
   for (const c of settings.interests) {
     if (c.deleted && leads.some((l) => (l.interests ?? []).includes(c.id))) interests.push(c)
   }
-  const ex = settings.exhibition
 
   interface Col {
     header: string
@@ -133,7 +135,7 @@ export function leadsSheet(
 
   // 1行目: 展示会名（と会場）
   const totalCols = before.length + interests.length + after.length
-  const title = [ex.name, ex.location].filter(Boolean).join(' @') || t('app.title')
+  const title = (ex ? [ex.name, ex.location].filter(Boolean).join(' @') : '') || t('app.title')
   const titleRow: Row = [
     {
       value: title,
@@ -237,8 +239,8 @@ function formatStamp(ts: number): string {
 }
 
 /** 会期中の、時間帯 × 日 の件数（ダッシュボードのグラフと同じ集計） */
-export function hourlySheet(leads: Lead[], settings: SharedSettings, t: TFn): SheetContent {
-  const d = buildDashboard(leads, settings.exhibition)
+export function hourlySheet(leads: Lead[], ex: Exhibition, t: TFn): SheetContent {
+  const d = buildDashboard(leads, ex)
   const dayLabels = d.perDay.map((_, i) => t('chart.day', { n: i + 1 }))
   const head = (value: string): Cell => ({ value, ...border, fontWeight: 'bold', backgroundColor: COLOR.header, align: 'center' })
   const data: Row[] = [[head(t('xlsx.colHour')), ...dayLabels.map(head), head(t('xlsx.colTotal'))]]

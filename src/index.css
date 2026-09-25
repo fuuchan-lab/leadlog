@@ -1828,3 +1828,179 @@ input[type='datetime-local'] {
   display: flex;
   flex-direction: column;
 }
+
+/* ---- 展示会の設定 ---- */
+.current-exhibition {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+.seg-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.seg-tabs button {
+  flex: 1 1 0;
+  min-height: 40px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 4px 6px;
+}
+.seg-tabs button.on {
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+.exhibition-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.exhibition-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+}
+.exhibition-item.on {
+  border: 2px solid var(--accent);
+}
+.exhibition-count {
+  flex: none;
+  font-weight: 700;
+  color: var(--accent);
+}
+.scope-chips {
+  margin: 2px 0 6px;
+}
+
+/* 開催日（1行＋カレンダー） */
+.range-display {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  text-align: left;
+}
+.calendar {
+  margin-top: 6px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+}
+.calendar-head button {
+  font-size: 1.4rem;
+  min-width: 44px;
+  min-height: 36px;
+}
+.calendar-hint {
+  margin: 2px 0 6px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.calendar-weekday {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+  padding: 2px 0;
+}
+.calendar-weekday.weekend {
+  color: var(--danger);
+}
+.calendar-day {
+  min-height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+}
+.calendar-day.today {
+  outline: 1px dashed var(--accent);
+  outline-offset: -3px;
+}
+.calendar-day.in-range {
+  background: var(--info-bg);
+  color: var(--info-text);
+  border-radius: 0;
+}
+.calendar-day.edge {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 700;
+  border-radius: 8px;
+}
+
+/* 開場時間（1行の時刻バー） */
+.hour-summary {
+  margin-bottom: 4px;
+  font-size: 1rem;
+}
+.hour-row {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+.hour-cell {
+  flex: 0 0 38px;
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  scroll-snap-align: start;
+}
+.hour-cell.in-range {
+  background: var(--info-bg);
+  color: var(--info-text);
+  border-color: transparent;
+}
+.hour-cell.edge {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 700;
+}

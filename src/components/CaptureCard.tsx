@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { describeError } from '../errors.ts'
+import type { Exhibition } from '../exhibitions.ts'
 import type { NewLeadExtras } from '../hooks/useLeads.ts'
 import { useI18n } from '../i18n/useI18n.ts'
 import type { Quad, RGBAImage } from '../scan/document.ts'
@@ -15,7 +16,8 @@ interface Props {
   /** この端末の登録者名 */
   member: string
   leads: Lead[]
-  exhibition: string
+  /** 登録先の展示会（この端末で開いている展示会。まだ無ければ null） */
+  exhibition: Exhibition | null
   /** 登録者名が入っているか（入っていなければ登録させない） */
   memberReady: boolean
   onSave: (fields: LeadFields, extras: NewLeadExtras) => Promise<Lead>
@@ -152,7 +154,12 @@ export function CaptureCard({ lists, member, leads, exhibition, memberReady, onS
     }
     setSaving(true)
     try {
-      const lead = await onSave(fields, { photo: photo?.blob ?? null, ocrText, exhibition })
+      const lead = await onSave(fields, {
+        photo: photo?.blob ?? null,
+        ocrText,
+        exhibitionId: exhibition?.id ?? '',
+        exhibition: exhibition?.name ?? '',
+      })
       setMessage({ kind: 'ok', text: t('form.saved', { name: lead.name || lead.company || lead.email || lead.phone }) })
       reset()
     } finally {

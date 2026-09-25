@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { findDuplicates, matchingLeads } from './duplicates.ts'
+import { newExhibition } from './exhibitions.ts'
 import { buildDashboard } from './stats.ts'
 import { EMPTY_FIELDS, type Lead } from './types.ts'
 
@@ -21,7 +22,14 @@ function lead(id: string, createdAt: Date, extra: Partial<Lead> = {}, deviceId =
   }
 }
 
-const ex = { name: 'Expo', startDate: '2026-10-07', days: 3, startHour: 10, endHour: 17 }
+const ex = {
+  ...newExhibition('ex1', new Date(2026, 9, 7)),
+  name: 'Expo',
+  startDate: '2026-10-07',
+  endDate: '2026-10-09',
+  startHour: 10,
+  endHour: 17,
+}
 
 test('会期中のリードを、時間帯 × 日で数える', () => {
   const leads = [
@@ -30,6 +38,7 @@ test('会期中のリードを、時間帯 × 日で数える', () => {
     lead('3', new Date(2026, 9, 8, 16, 30), {}, 'bbbbbbbb', '佐藤'),
     lead('4', new Date(2026, 9, 9, 18, 0)), // 閉場後
     lead('5', new Date(2026, 9, 6, 12, 0)), // 会期前
+    lead('6', new Date(2026, 9, 7, 11, 0), { exhibitionId: 'other' }), // 別の展示会
   ]
   const d = buildDashboard(leads, ex, new Date(2026, 9, 8, 12).getTime())
   assert.equal(d.total, 4)

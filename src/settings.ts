@@ -1,8 +1,11 @@
+import { fromLegacy, mergeExhibitions, parseExhibition, type Exhibition } from './exhibitions.ts'
+
 /**
  * 全員で共有する設定（展示会・重要度・顧客の種類・興味のある分野）。Google ドライブの settings.json で全端末にそろえる。
  * 登録者名など、端末ごとの設定は device.ts。
  *
- * 項目のまとまり（展示会・重要度・顧客の種類）ごとに更新時刻を持ち、端末間では新しい方を採用する。
+ * 重要度・顧客の種類などのリストは、まとまりごとに更新時刻を持ち、端末間では新しい方を採用する。
+ * 展示会は1件ずつ更新時刻を持ち、ID ごとに新しい方を採用する（exhibitions.ts）。
  * 重要度・顧客の種類は、削除しても印を付けて残す（過去のリードの表示と Excel に名前を出すため）。
  */
 
@@ -13,23 +16,9 @@ export interface Category {
   deleted?: boolean
 }
 
-export interface Exhibition {
-  name: string
-  /** 初日（YYYY-MM-DD） */
-  startDate: string
-  /** 会期の日数 */
-  days: number
-  /** 開場の時（0-23） */
-  startHour: number
-  /** 閉場の時（1-24） */
-  endHour: number
-  /** 会場・ブース（例: 東京ビッグサイト 東7ホール 68-20） */
-  location: string
-}
-
 export interface SharedSettings {
-  exhibition: Exhibition
-  exhibitionUpdatedAt: number
+  /** 登録した展示会（削除済みを含む） */
+  exhibitions: Exhibition[]
   importance: Category[]
   importanceUpdatedAt: number
   customerTypes: Category[]
@@ -56,17 +45,8 @@ export const CATEGORY_COLORS = [
   '#64748b',
 ]
 
-export const DAYS_MIN = 1
-export const DAYS_MAX = 7
-
-const pad = (n: number) => String(n).padStart(2, '0')
-
-export function todayString(now = new Date()): string {
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
-}
-
 /** 初めて使う時の設定。更新時刻は 0 にして、ドライブに設定があればそちらを必ず採用する */
-export function defaultSettings(lang: 'ja' | 'en', now = new Date()): SharedSettings {
+export function defaultSettings(lang: 'ja' | 'en'): SharedSettings {
   const importance = ['A', 'B', 'C', 'D', 'E'].map((label, i) => ({
     id: `imp-${label.toLowerCase()}`,
     label,
@@ -91,8 +71,7 @@ export function defaultSettings(lang: 'ja' | 'en', now = new Date()): SharedSett
     color: ['#0ea5e9', '#6366f1', '#22c55e', '#f97316', '#a855f7', '#64748b'][i],
   }))
   return {
-    exhibition: { name: '', startDate: todayString(now), days: 3, startHour: 10, endHour: 17, location: '' },
-    exhibitionUpdatedAt: 0,
+    exhibitions: [],
     importance,
     importanceUpdatedAt: 0,
     customerTypes,
@@ -109,30 +88,17 @@ function isCategory(x: unknown): x is Category {
   return !!c && typeof c.id === 'string' && typeof c.label === 'string' && typeof c.color === 'string'
 }
 
-function clampInt(v: unknown, min: number, max: number, fallback: number): number {
-  const n = Math.round(Number(v))
-  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback
-}
-
 /** 保存内容・ドライブのファイルを読み込む。壊れた部分は既定値で補う */
 export function parseSettings(text: string, fallback: SharedSettings): SharedSettings {
   const data = JSON.parse(text) as Partial<SharedSettings> | null
   if (!data || typeof data !== 'object') throw new Error('invalid-settings')
-  const ex = (data.exhibition ?? {}) as Partial<Exhibition>
-  const startHour = clampInt(ex.startHour, 0, 23, fallback.exhibition.startHour)
+  // 以前のバージョンは展示会が1つだけ（exhibition）だった
+  const legacy = data as { exhibition?: unknown; exhibitionUpdatedAt?: number }
+  const exhibitions = Array.isArray(data.exhibitions)
+    ? data.exhibitions.map(parseExhibition).filter((e): e is Exhibition => e !== null)
+    : fromLegacy(legacy.exhibition, Number(legacy.exhibitionUpdatedAt) || 0)
   return {
-    exhibition: {
-      name: typeof ex.name === 'string' ? ex.name : fallback.exhibition.name,
-      startDate:
-        typeof ex.startDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(ex.startDate)
-          ? ex.startDate
-          : fallback.exhibition.startDate,
-      days: clampInt(ex.days, DAYS_MIN, DAYS_MAX, fallback.exhibition.days),
-      startHour,
-      endHour: clampInt(ex.endHour, startHour + 1, 24, Math.max(startHour + 1, fallback.exhibition.endHour)),
-      location: typeof ex.location === 'string' ? ex.location : fallback.exhibition.location,
-    },
-    exhibitionUpdatedAt: Number(data.exhibitionUpdatedAt) || 0,
+    exhibitions,
     importance: Array.isArray(data.importance) ? data.importance.filter(isCategory) : fallback.importance,
     importanceUpdatedAt: Number(data.importanceUpdatedAt) || 0,
     customerTypes: Array.isArray(data.customerTypes) ? data.customerTypes.filter(isCategory) : fallback.customerTypes,
@@ -148,16 +114,14 @@ export function serializeSettings(s: SharedSettings): string {
   return JSON.stringify({ version: 1, ...s })
 }
 
-/** まとまりごとに、更新時刻が新しい方を採用する */
+/** まとまりごとに（展示会は1件ごとに）、更新時刻が新しい方を採用する */
 export function mergeSettings(local: SharedSettings, remote: SharedSettings): SharedSettings {
-  const ex = remote.exhibitionUpdatedAt > local.exhibitionUpdatedAt ? remote : local
   const imp = remote.importanceUpdatedAt > local.importanceUpdatedAt ? remote : local
   const types = remote.customerTypesUpdatedAt > local.customerTypesUpdatedAt ? remote : local
   const interests = remote.interestsUpdatedAt > local.interestsUpdatedAt ? remote : local
   const actions = remote.nextActionsUpdatedAt > local.nextActionsUpdatedAt ? remote : local
   return {
-    exhibition: ex.exhibition,
-    exhibitionUpdatedAt: ex.exhibitionUpdatedAt,
+    exhibitions: mergeExhibitions(local.exhibitions, remote.exhibitions),
     importance: imp.importance,
     importanceUpdatedAt: imp.importanceUpdatedAt,
     customerTypes: types.customerTypes,
@@ -264,8 +228,3 @@ export function setSettingsDirty(dirty: boolean) {
   }
 }
 
-/** 会期の各日の 0時 (epoch ms) */
-export function exhibitionDays(ex: Exhibition): number[] {
-  const [y, m, d] = ex.startDate.split('-').map(Number)
-  return Array.from({ length: ex.days }, (_, i) => new Date(y, m - 1, d + i).getTime())
-}

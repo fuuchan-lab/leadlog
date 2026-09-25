@@ -17,7 +17,8 @@ import { useI18n } from './i18n/useI18n.ts'
 export default function App() {
   const { t, lang } = useI18n()
   const online = useOnline()
-  const [view, setView] = useState<'home' | 'settings'>('home')
+  // URL の末尾が #settings なら設定の画面から開く（ホーム画面のショートカットや確認用）
+  const [view, setView] = useState<'home' | 'settings'>(() => (location.hash === '#settings' ? 'settings' : 'home'))
   const [member, setMember] = useState(loadMember)
   const { leads, unsyncedCount, reload, add, update, remove } = useLeads()
   const shared = useSharedSettings()
@@ -75,12 +76,17 @@ export default function App() {
         <div className="home-grid">
           <div className="home-col">
           {!member && <MemberPrompt onSave={changeMember} />}
-          <StatusCard leads={leads} settings={shared.settings} importance={shared.importance} />
+          <StatusCard
+            leads={leads}
+            exhibition={shared.current}
+            importance={shared.importance}
+            onOpenSettings={() => setView('settings')}
+          />
           <CaptureCard
             lists={lists}
             member={member}
             leads={leads}
-            exhibition={shared.settings.exhibition.name}
+            exhibition={shared.current}
             memberReady={member !== ''}
             onSave={add}
           />
@@ -88,6 +94,7 @@ export default function App() {
           <div className="home-col">
           <LeadList
             leads={leads}
+            exhibition={shared.current}
             allImportance={shared.settings.importance}
             allCustomerTypes={shared.settings.customerTypes}
             allInterests={shared.settings.interests}

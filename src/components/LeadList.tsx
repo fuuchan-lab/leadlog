@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { authorLabel } from '../device.ts'
 import { findDuplicates } from '../duplicates.ts'
+import { belongsTo, type Exhibition } from '../exhibitions.ts'
 import { formatDateTime } from '../format.ts'
 import { useI18n } from '../i18n/useI18n.ts'
 import type { Category } from '../settings.ts'
@@ -12,6 +13,8 @@ import { LeadPopup } from './LeadPopup.tsx'
 
 interface Props {
   leads: Lead[]
+  /** この端末で開いている展示会。一覧は、はじめはこの展示会のリードだけを出す */
+  exhibition: Exhibition | null
   /** 削除済みを含む（名前を出すため） */
   allImportance: Category[]
   allCustomerTypes: Category[]
@@ -44,13 +47,19 @@ const pick = (l: Lead): LeadFields => ({
 })
 
 /** 登録したリードの一覧（頭痛ログの履歴と同じ形）。検索・重要度での絞り込み・編集・削除ができる */
-export function LeadList({ leads, allImportance, allCustomerTypes, allInterests, allNextActions, lists, member, onUpdate, onRemove }: Props) {
+export function LeadList({ leads: allLeads, exhibition, allImportance, allCustomerTypes, allInterests, allNextActions, lists, member, onUpdate, onRemove }: Props) {
   const { t, lang } = useI18n()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<string | null>(null)
   const [limit, setLimit] = useState(PAGE)
   const [editing, setEditing] = useState<{ id: string; fields: LeadFields } | null>(null)
   const [popup, setPopup] = useState<Lead | null>(null)
+  const [scope, setScope] = useState<'this' | 'all'>('this')
+  // 開いている展示会のリード（「すべての展示会」を選ぶと全部）
+  const leads = useMemo(
+    () => (scope === 'this' && exhibition ? allLeads.filter((l) => belongsTo(l, exhibition)) : allLeads),
+    [allLeads, exhibition, scope],
+  )
 
   const duplicates = useMemo(() => findDuplicates(leads), [leads])
   const byId = (list: Category[], id: string) => list.find((c) => c.id === id)
@@ -74,6 +83,16 @@ export function LeadList({ leads, allImportance, allCustomerTypes, allInterests,
         <h2>{t('list.title')}</h2>
         <span className="muted">{t('list.count', { n: filtered.length })}</span>
       </div>
+      {exhibition && (
+        <div className="chips scope-chips">
+          <button type="button" className={`chip${scope === 'this' ? ' on on-neutral' : ''}`} onClick={() => setScope('this')}>
+            {t('list.thisExhibition')}: {exhibition.name || t('exhibition.untitled')}
+          </button>
+          <button type="button" className={`chip${scope === 'all' ? ' on on-neutral' : ''}`} onClick={() => setScope('all')}>
+            {t('list.allExhibitions')}
+          </button>
+        </div>
+      )}
       {leads.length > 0 && (
         <>
           <input

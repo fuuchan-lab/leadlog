@@ -5,11 +5,12 @@ import type { SharedSettingsState } from '../hooks/useSharedSettings.ts'
 import type { Lang } from '../i18n/context.ts'
 import { useI18n } from '../i18n/useI18n.ts'
 import { isOcrReady, prepareOcr } from '../scan/ocr.ts'
-import { DAYS_MAX, DAYS_MIN, type Exhibition } from '../settings.ts'
+import { belongsTo } from '../exhibitions.ts'
 import { applyTheme, loadTheme, saveTheme, type ThemePreference } from '../theme.ts'
 import type { Lead } from '../types.ts'
 import { CategoryEditor } from './CategoryEditor.tsx'
 import { DevicesCard } from './DevicesCard.tsx'
+import { ExhibitionCard } from './ExhibitionCard.tsx'
 
 interface Props {
   shared: SharedSettingsState
@@ -34,8 +35,6 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn }: Prop
   const [theme, setTheme] = useState<ThemePreference>(loadTheme)
   const [memberDraft, setMemberDraft] = useState(member)
   const [memberSaved, setMemberSaved] = useState(false)
-  const [ex, setEx] = useState<Exhibition>(shared.settings.exhibition)
-  const [exSaved, setExSaved] = useState(false)
   const [exp, setExp] = useState<ExportState>({ status: 'idle' })
   const [scope, setScope] = useState<'all' | 'exhibition'>('exhibition')
   const [ocr, setOcr] = useState<OcrState>({ status: isOcrReady() ? 'ready' : 'idle' })
@@ -46,9 +45,10 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn }: Prop
     applyTheme(next)
   }
 
-  const exName = shared.settings.exhibition.name
-  const exLeads = leads.filter((l) => l.exhibition === exName)
-  const targets = scope === 'exhibition' && exName ? exLeads : leads
+  const current = shared.current
+  const exLeads = current ? leads.filter((l) => belongsTo(l, current)) : []
+  const onlyCurrent = scope === 'exhibition' && current !== null
+  const targets = onlyCurrent ? exLeads : leads
 
   const runExport = async (to: 'drive' | 'device') => {
     setExp({ status: 'busy' })
@@ -56,23 +56,17 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn }: Prop
       // Excel 出力のライブラリは、使う時だけ読み込む
       const { exportToDrive, exportToDevice } = await import('../exportExcel.ts')
       const run = to === 'drive' ? exportToDrive : exportToDevice
-      const name = scope === 'exhibition' && exName ? exName : ''
-      setExp({ status: 'done', ...(await run(targets, shared.settings, t, lang, name)) })
+      setExp({ status: 'done', ...(await run(targets, shared.settings, onlyCurrent ? current : null, t, lang)) })
     } catch (e) {
       console.error('[export]', e)
       setExp({ status: 'error' })
     }
   }
 
-  const exChanged = JSON.stringify(ex) !== JSON.stringify(shared.settings.exhibition)
-  const setExField = <K extends keyof Exhibition>(key: K, value: Exhibition[K]) => {
-    setEx({ ...ex, [key]: value })
-    setExSaved(false)
-  }
-  const hours = Array.from({ length: 25 }, (_, h) => h)
-
   return (
     <>
+      <ExhibitionCard shared={shared} leads={leads} />
+
       <section className="card">
         <div className="row">
           <h2>{t('settings.language')}</h2>
@@ -136,88 +130,6 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn }: Prop
 
       <DevicesCard loggedIn={loggedIn} />
 
-      <section className="card">
-        <h2>{t('exhibition.title')}</h2>
-        <p className="muted small">{t('exhibition.help')}</p>
-        <label className="field">
-          {t('exhibition.name')}
-          <input
-            type="text"
-            maxLength={60}
-            placeholder={t('exhibition.namePlaceholder')}
-            value={ex.name}
-            onChange={(e) => setExField('name', e.target.value)}
-          />
-        </label>
-        <label className="field">
-          {t('exhibition.location')}
-          <input
-            type="text"
-            maxLength={80}
-            placeholder={t('exhibition.locationPlaceholder')}
-            value={ex.location}
-            onChange={(e) => setExField('location', e.target.value)}
-          />
-        </label>
-        <div className="form-grid">
-          <label className="field">
-            {t('exhibition.start')}
-            <input type="date" value={ex.startDate} onChange={(e) => e.target.value && setExField('startDate', e.target.value)} />
-          </label>
-          <label className="field">
-            {t('exhibition.days')}
-            <select value={ex.days} onChange={(e) => setExField('days', Number(e.target.value))}>
-              {Array.from({ length: DAYS_MAX - DAYS_MIN + 1 }, (_, i) => DAYS_MIN + i).map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <div className="field">
-          {t('exhibition.hours')}
-          <div className="hours-row">
-            <select
-              value={ex.startHour}
-              aria-label={t('exhibition.hours')}
-              onChange={(e) => {
-                const startHour = Number(e.target.value)
-                setEx({ ...ex, startHour, endHour: Math.max(ex.endHour, startHour + 1) })
-                setExSaved(false)
-              }}
-            >
-              {hours.slice(0, 24).map((h) => (
-                <option key={h} value={h}>
-                  {h}
-                </option>
-              ))}
-            </select>
-            <span>{t('exhibition.from')}</span>
-            <select value={ex.endHour} aria-label={t('exhibition.hours')} onChange={(e) => setExField('endHour', Number(e.target.value))}>
-              {hours.filter((h) => h > ex.startHour).map((h) => (
-                <option key={h} value={h}>
-                  {h}
-                </option>
-              ))}
-            </select>
-            <span>{t('exhibition.to')}</span>
-          </div>
-        </div>
-        <div className="row">
-          <span>{exSaved && <span className="ok">{t('exhibition.saved')}</span>}</span>
-          <button
-            className="primary"
-            disabled={!exChanged}
-            onClick={() => {
-              shared.setExhibition({ ...ex, name: ex.name.trim(), location: ex.location.trim() })
-              setExSaved(true)
-            }}
-          >
-            {t('common.save')}
-          </button>
-        </div>
-      </section>
 
       {(['importance', 'customerTypes', 'interests', 'nextActions'] as const).map((kind) => (
         <CategoryEditor
@@ -261,12 +173,12 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn }: Prop
       <section className="card">
         <h2>{t('export.title')}</h2>
         <p className="muted small">{t('export.help', { folder: driveConfig.folderName })}</p>
-        {exName && (
+        {current && (
           <div className="field" role="radiogroup" aria-label={t('export.scope')}>
             {t('export.scope')}
             <label className="radio">
               <input type="radio" checked={scope === 'exhibition'} onChange={() => setScope('exhibition')} />
-              {t('export.scopeExhibition', { name: exName, n: exLeads.length })}
+              {t('export.scopeExhibition', { name: current.name || t('exhibition.untitled'), n: exLeads.length })}
             </label>
             <label className="radio">
               <input type="radio" checked={scope === 'all'} onChange={() => setScope('all')} />

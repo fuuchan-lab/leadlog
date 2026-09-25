@@ -1,7 +1,8 @@
 import { lazy, Suspense, useMemo } from 'react'
 import { LOCALES } from '../i18n/context.ts'
 import { useI18n } from '../i18n/useI18n.ts'
-import { exhibitionDays, type Category, type SharedSettings } from '../settings.ts'
+import { dayCount, exhibitionDays, type Exhibition } from '../exhibitions.ts'
+import type { Category } from '../settings.ts'
 import { buildDashboard } from '../stats.ts'
 import type { Lead } from '../types.ts'
 
@@ -10,17 +11,34 @@ const LeadChart = lazy(() => import('./LeadChart.tsx'))
 
 interface Props {
   leads: Lead[]
-  settings: SharedSettings
+  /** この端末で開いている展示会（まだ無ければ null） */
+  exhibition: Exhibition | null
   importance: Category[]
+  onOpenSettings: () => void
 }
 
 /**
- * ダッシュボード（頭痛ログの気圧のカードの位置）。展示会の会期中のリード件数と、
+ * ダッシュボード（頭痛ログの気圧のカードの位置）。開いている展示会の会期中のリード件数と、
  * 時間帯別の棒グラフ、重要度別・登録者別の件数を表示する。
  */
-export function StatusCard({ leads, settings, importance }: Props) {
+export function StatusCard({ leads, exhibition, importance, onOpenSettings }: Props) {
+  const { t } = useI18n()
+  if (!exhibition) {
+    return (
+      <section className="card">
+        <h2>{t('dash.title')}</h2>
+        <p className="muted">{t('dash.noExhibition')}</p>
+        <button className="primary" onClick={onOpenSettings}>
+          {t('dash.openSettings')}
+        </button>
+      </section>
+    )
+  }
+  return <Dashboard leads={leads} ex={exhibition} importance={importance} />
+}
+
+function Dashboard({ leads, ex, importance }: { leads: Lead[]; ex: Exhibition; importance: Category[] }) {
   const { t, lang } = useI18n()
-  const ex = settings.exhibition
   // 他の端末の登録が同期で増えた時も、表示を作り直す。1分ごとに「今日」を判定し直す必要はない（再描画のたびに計算する）
   const d = useMemo(() => buildDashboard(leads, ex), [leads, ex])
   const days = exhibitionDays(ex)
@@ -33,16 +51,16 @@ export function StatusCard({ leads, settings, importance }: Props) {
         <h2>{ex.name || t('dash.title')}</h2>
       </div>
       <p className="muted small">
-        {!ex.name && (
+        {ex.location && (
           <>
-            {t('dash.noName')}
+            📍 {ex.location}
             <br />
           </>
         )}
         {t('dash.period', {
           from: fmt(days[0]),
           to: fmt(days[days.length - 1]),
-          days: ex.days,
+          days: dayCount(ex),
           start: ex.startHour,
           end: ex.endHour,
         })}

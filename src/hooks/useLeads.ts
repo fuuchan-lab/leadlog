@@ -7,6 +7,7 @@ export interface NewLeadExtras {
   /** 補正した名刺・バッジの画像（手入力なら無し） */
   photo: Blob | null
   ocrText: string
+  exhibitionId: string
   exhibition: string
 }
 
@@ -45,6 +46,7 @@ export function useLeads() {
         id: crypto.randomUUID(),
         photoId,
         ocrText: extras.ocrText,
+        exhibitionId: extras.exhibitionId,
         exhibition: extras.exhibition,
         createdAt: now,
         createdBy: author,

@@ -1,5 +1,5 @@
 /** ダッシュボードの集計。ブラウザ機能に依存しない（テストできる） */
-import { exhibitionDays, type Exhibition } from './settings.ts'
+import { belongsTo, exhibitionDays, type Exhibition } from './exhibitions.ts'
 import type { Lead } from './types.ts'
 
 const DAY = 24 * 60 * 60_000
@@ -54,6 +54,7 @@ export function buildDashboard(leads: Lead[], ex: Exhibition, now = Date.now()):
   }
 
   for (const l of leads) {
+    if (!belongsTo(l, ex)) continue
     const at = l.metAt || l.createdAt
     const d = dayIndexOf(at)
     if (d < 0) continue

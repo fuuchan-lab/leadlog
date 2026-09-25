@@ -49,6 +49,8 @@ export interface Lead {
   photoId: string | null
   /** OCR で読み取った文字（あとで確認・修正するため残す） */
   ocrText: string
+  /** 登録した展示会の ID（以前のバージョンのリードには無い） */
+  exhibitionId: string
   /** 登録した時の展示会名 */
   exhibition: string
   /** 登録日時 (epoch ms)。変わらない */

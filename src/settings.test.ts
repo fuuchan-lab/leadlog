@@ -3,7 +3,6 @@ import { test } from 'node:test'
 import {
   addCategory,
   defaultSettings,
-  exhibitionDays,
   mergeSettings,
   moveCategory,
   parseSettings,
@@ -12,36 +11,44 @@ import {
   updateCategory,
   visibleCategories,
 } from './settings.ts'
+import { newExhibition } from './exhibitions.ts'
 
-const base = defaultSettings('ja', new Date(2026, 9, 7))
+const base = defaultSettings('ja')
 
-test('既定の重要度は A〜E、会期は3日・10時〜17時', () => {
+test('既定の重要度は A〜E、展示会はまだ無い', () => {
   assert.deepEqual(
     base.importance.map((c) => c.label),
     ['A', 'B', 'C', 'D', 'E'],
   )
-  assert.deepEqual(base.exhibition, { name: '', startDate: '2026-10-07', days: 3, startHour: 10, endHour: 17, location: '' })
+  assert.deepEqual(base.exhibitions, [])
 })
 
 test('保存した内容を読み戻せる。壊れた値は既定値で補う', () => {
   assert.deepEqual(parseSettings(serializeSettings(base), base), base)
-  const broken = parseSettings(JSON.stringify({ exhibition: { days: 99, startHour: 20, endHour: 5 } }), base)
-  assert.equal(broken.exhibition.days, 7)
-  assert.equal(broken.exhibition.endHour, 21)
+  const broken = parseSettings(JSON.stringify({ exhibitions: [{ id: 'x' }], importance: 'bad' }), base)
+  assert.deepEqual(broken.exhibitions, [])
   assert.deepEqual(broken.importance, base.importance)
+  // 以前のバージョン（展示会が1つだけ）の設定を読み込むと、展示会の一覧になる
+  const legacy = parseSettings(JSON.stringify({ exhibition: { name: 'Expo', startDate: '2026-10-07', days: 3, startHour: 10, endHour: 17 }, exhibitionUpdatedAt: 9 }), base)
+  assert.equal(legacy.exhibitions.length, 1)
+  assert.equal(legacy.exhibitions[0].endDate, '2026-10-09')
 })
 
-test('まとまりごとに新しい方を採用する', () => {
-  const local = { ...base, exhibition: { ...base.exhibition, name: 'Local' }, exhibitionUpdatedAt: 200 }
+test('まとまりごとに新しい方を採用する。展示会は両方の端末のものを残す', () => {
+  const exA = { ...newExhibition('a', new Date(2026, 9, 7)), name: 'A' }
+  const exB = { ...newExhibition('b', new Date(2026, 9, 8)), name: 'B' }
+  const local = { ...base, exhibitions: [exA] }
   const remote = {
     ...base,
-    exhibition: { ...base.exhibition, name: 'Remote' },
-    exhibitionUpdatedAt: 100,
+    exhibitions: [exB],
     customerTypes: [{ id: 'x', label: 'X', color: '#000' }],
     customerTypesUpdatedAt: 300,
   }
   const merged = mergeSettings(local, remote)
-  assert.equal(merged.exhibition.name, 'Local')
+  assert.deepEqual(
+    merged.exhibitions.map((e) => e.name),
+    ['A', 'B'],
+  )
   assert.equal(merged.customerTypes[0].label, 'X')
   assert.equal(merged.importance, local.importance)
 })
@@ -69,10 +76,3 @@ test('追加・重複・名前の変更・削除・並べ替え', () => {
   assert.equal(moveCategory(base.importance, 'imp-a', -1), base.importance)
 })
 
-test('会期の各日', () => {
-  const days = exhibitionDays({ ...base.exhibition, startDate: '2026-10-30', days: 3 })
-  assert.deepEqual(
-    days.map((d) => new Date(d).getDate()),
-    [30, 31, 1],
-  )
-})

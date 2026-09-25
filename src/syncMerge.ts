@@ -94,6 +94,7 @@ function emptyTextFields() {
     nextSteps: [],
     photoId: null,
     ocrText: '',
+    exhibitionId: '',
     exhibition: '',
   }
 }
