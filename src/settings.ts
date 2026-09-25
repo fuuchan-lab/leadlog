@@ -50,7 +50,7 @@ export function defaultSettings(lang: 'ja' | 'en'): SharedSettings {
   const importance = ['A', 'B', 'C', 'D', 'E'].map((label, i) => ({
     id: `imp-${label.toLowerCase()}`,
     label,
-    color: ['#dc2626', '#f97316', '#eab308', '#22c55e', '#64748b'][i],
+    color: ['#0ea5e9', '#22c55e', '#eab308', '#f97316', '#dc2626'][i],
   }))
   const typeLabels =
     lang === 'ja'

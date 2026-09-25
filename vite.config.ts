@@ -33,6 +33,9 @@ export default defineConfig({
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        // help.html・privacy.html は SPA ではない単独のページ。指定しないと、オフライン対応の仕組みが
+        // これらへの移動もすべてアプリ本体（index.html）に差し替えてしまい、ヘルプが開けなくなる
+        navigateFallbackDenylist: [/\/help\.html$/, /\/privacy\.html$/],
         // OCR の部品（tesseract.js の worker・wasm・言語データ）は CDN から読み込む。
         // 一度読み込んだら端末に保存し、電波のない展示会場でも読み取れるようにする
         runtimeCaching: [
