@@ -9,7 +9,7 @@
 import { authorLabel } from './device.ts'
 import type { Lang, TFn } from './i18n/context.ts'
 import { prefectureInEnglish } from './scan/extract.ts'
-import { categoryLabel, visibleCategories, type SharedSettings } from './settings.ts'
+import { categoryColor, categoryLabel, visibleCategories, type SharedSettings } from './settings.ts'
 import type { Exhibition } from './exhibitions.ts'
 import { buildDashboard } from './stats.ts'
 import type { Lead } from './types.ts'
@@ -45,19 +45,39 @@ export interface SheetContent {
 }
 
 // 以前の集約表の配色
+// 列ごとの色（利用者が整えた集約表の配色に合わせている）
 const COLOR = {
   title: '#0000FF',
   header: '#FFFF00',
   priorityHeader: '#FF0000',
-  interestHeader: '#DCE6F1',
+  interestHeader: '#FFFF00',
   auditHeader: '#D9D9D9',
-  main: '#FFC000',
+  /** No. */
+  no: '#EBF1DE',
+  /** 会社名・氏名・部署・役職 */
+  person: '#DCE6F1',
+  /** 都道府県・市区町村（文字はオレンジ） */
+  place: '#FDE9D9',
+  placeText: '#E26B0A',
+  /** 電話番号・メール */
   contact: '#FCD5B4',
-  visit: '#FFF2CC',
-  interest: '#DCE6F1',
+  /** 来場日・時間・受付 */
+  visit: '#FFFFFF',
+  staffText: '#E26B0A',
+  /** 優先度（文字は重要度の色） */
+  priority: '#FFFFCC',
+  /** 顧客の種類 */
+  customerType: '#FFC000',
+  /** 興味のある分野（該当は 1 を濃い緑に） */
+  interest: '#EBF1DE',
   interestOn: '#92D050',
-  priorityText: '#C00000',
-  audit: '#F2F2F2',
+  /** 次のアクション・担当（文字は紫） */
+  action: '#F2DCEF',
+  actionText: '#7030A0',
+  /** メモ・コメント */
+  note: '#DDEBF7',
+  /** アプリが自動で記録した情報 */
+  audit: '#D9D9D9',
   border: '#A6A6A6',
 }
 
@@ -121,11 +141,15 @@ export function leadsSheet(
     { header: H('メモ・コメント', 'Notes / Comments'), width: 50 },
     { header: H('登録日時', 'Added at'), width: 16, bg: COLOR.auditHeader },
     { header: H('登録端末', 'Device'), width: 24, bg: COLOR.auditHeader },
+    { header: H('対象展示会', 'Exhibition'), width: 22, bg: COLOR.auditHeader },
     { header: H('更新', 'Edited'), width: 26, bg: COLOR.auditHeader },
     { header: H('重複の可能性', 'Duplicate?'), width: 10, bg: COLOR.auditHeader },
     { header: H('読み取った文字', 'Recognized text'), width: 40, bg: COLOR.auditHeader },
   ]
   const hasGroup = interests.length > 0
+  /** リードの展示会名（展示会の一覧に無ければ、登録した時の名前） */
+  const exhibitionName = (l: Lead) =>
+    settings.exhibitions.find((e) => e.id === l.exhibitionId)?.name || l.exhibition
   const headerStyle = (c: Col): Omit<Cell, 'value'> => ({
     fontWeight: 'bold',
     backgroundColor: c.bg ?? COLOR.header,
@@ -186,38 +210,42 @@ export function leadsSheet(
         return extra ? `${label} (${extra})` : label
       })
       const pic = [...new Set((l.nextSteps ?? []).map((s) => s.who).filter(Boolean))].join(', ')
-      const main = { backgroundColor: COLOR.main }
+      const person = { backgroundColor: COLOR.person }
+      const place = { backgroundColor: COLOR.place, textColor: COLOR.placeText }
+      const action = { backgroundColor: COLOR.action, textColor: COLOR.actionText }
       return [
-        cell(i + 1, { ...main, align: 'right' }),
-        cell(l.company, { ...main, fontWeight: 'bold' }),
-        cell(l.name, main),
-        cell(l.department, main),
-        cell(l.title, main),
-        cell(lang === 'en' ? prefectureInEnglish(l.prefecture) : l.prefecture, main),
-        cell(l.city, main),
+        cell(i + 1, { backgroundColor: COLOR.no, align: 'center' }),
+        cell(l.company, { ...person, fontWeight: 'bold' }),
+        cell(l.name, person),
+        cell(l.department, person),
+        cell(l.title, person),
+        cell(lang === 'en' ? prefectureInEnglish(l.prefecture) : l.prefecture, place),
+        cell(l.city, place),
         cell(l.phone, { backgroundColor: COLOR.contact }),
         cell(l.email, { backgroundColor: COLOR.contact }),
         cell(met, { backgroundColor: COLOR.visit, format: 'm/d', align: 'center' }),
         cell(met, { backgroundColor: COLOR.visit, format: 'h:mm', align: 'center' }),
-        cell(l.staff ?? l.createdBy.member, { backgroundColor: COLOR.visit, align: 'center' }),
+        cell(l.staff ?? l.createdBy.member, { backgroundColor: COLOR.visit, textColor: COLOR.staffText, align: 'center' }),
         cell(categoryLabel(settings.importance, l.importance), {
-          ...main,
+          backgroundColor: COLOR.priority,
           fontWeight: 'bold',
           fontSize: 12,
-          textColor: COLOR.priorityText,
+          // 重要度ごとの色（設定の重要度の色）で表示する
+          textColor: categoryColor(settings.importance, l.importance),
           align: 'center',
         }),
-        cell(categoryLabel(settings.customerTypes, l.customerType), main),
+        cell(categoryLabel(settings.customerTypes, l.customerType), { backgroundColor: COLOR.customerType }),
         ...interests.map((c) =>
           (l.interests ?? []).includes(c.id)
             ? cell(1, { backgroundColor: COLOR.interestOn, align: 'center', fontWeight: 'bold' })
             : cell('', { backgroundColor: COLOR.interest }),
         ),
-        cell(steps.join(' / '), { ...main, wrap: true }),
-        cell(pic, main),
-        cell(l.note, { ...main, wrap: true, alignVertical: 'top' }),
+        cell(steps.join(' / '), { ...action, wrap: true }),
+        cell(pic, action),
+        cell(l.note, { backgroundColor: COLOR.note, wrap: true, alignVertical: 'top' }),
         cell(asExcelDate(l.createdAt), { backgroundColor: COLOR.audit, format: 'yyyy/mm/dd hh:mm' }),
         cell(authorLabel(l.createdBy) + ` #${l.createdBy.deviceId}`, { backgroundColor: COLOR.audit }),
+        cell(exhibitionName(l), { backgroundColor: COLOR.audit }),
         cell(
           l.updatedAt !== l.createdAt ? `${formatStamp(l.updatedAt)} ${authorLabel(l.updatedBy)}` : '',
           { backgroundColor: COLOR.audit },
