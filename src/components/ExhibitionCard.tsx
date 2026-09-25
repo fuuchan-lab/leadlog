@@ -141,15 +141,8 @@ export function ExhibitionCard({ shared, leads, onOpened }: Props) {
     <section className="card">
       <h2>{t('exhibition.title')}</h2>
       <p className="muted small">{t('exhibition.help')}</p>
-      {current ? (
-        <p className="current-exhibition">
-          <span className="muted small">{t('exhibition.current')}</span>
-          <br />
-          <strong>{current.name || t('exhibition.untitled')}</strong> <span className="muted small">{period(current)}</span>
-        </p>
-      ) : (
-        <p className="banner banner-info">{t('exhibition.none')}</p>
-      )}
+      {/* 「開いている展示会」は、下の一覧の「開いています」の印で分かるので、ここでは繰り返さない */}
+      {!current && <p className="banner banner-info">{t('exhibition.none')}</p>}
 
       {exhibitions.length > 0 && (
         <ul className="exhibition-list">
@@ -163,7 +156,7 @@ export function ExhibitionCard({ shared, leads, onOpened }: Props) {
                   type="button"
                   role="radio"
                   aria-checked={isPicked}
-                  className={`exhibition-item${isCurrent ? ' on' : ''}${isPicked && !isCurrent ? ' picked' : ''}`}
+                  className={`exhibition-item${isPicked ? ' picked' : ''}`}
                   onClick={() => setPickedId(e.id)}
                 >
                   <span>
@@ -208,7 +201,7 @@ export function ExhibitionCard({ shared, leads, onOpened }: Props) {
         </button>
         {exhibitions.length > 0 && (
           <button type="button" disabled={!pickedId} onClick={openPicked}>
-            📂 {t('exhibition.tabOpen')}
+            📂 {t('exhibition.openPicked')}
           </button>
         )}
       </div>

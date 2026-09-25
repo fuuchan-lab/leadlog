@@ -1886,12 +1886,9 @@ input[type='datetime-local'] {
   color: var(--text);
   font: inherit;
 }
-.exhibition-item.on {
-  border: 2px solid var(--accent);
-}
-/* 「既存の展示会を開く」で開く対象として選んだ（まだ開いてはいない）行 */
+/* 「選択した展示会を開く」で開く対象として選んでいる行（青・太い線） */
 .exhibition-item.picked {
-  border-color: var(--accent);
+  border: 2px solid var(--accent);
   background: var(--info-bg);
 }
 .exhibition-count {
