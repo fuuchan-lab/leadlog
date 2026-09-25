@@ -259,9 +259,9 @@ export function hourlySheet(leads: Lead[], settings: SharedSettings, t: TFn): Sh
   return { data, columns: [{ width: 14 }, ...d.perDay.map(() => ({ width: 10 })), { width: 10 }], headerRows: 1 }
 }
 
-/** 書き出すファイル名。ExhibitionLeadLog_<展示会名>_YYYYMMDD-HHMM.xlsx（ファイル名に使えない文字は _ にする） */
+/** 書き出すファイル名。LeadLog_<展示会名>_YYYYMMDD-HHMM.xlsx（ファイル名に使えない文字は _ にする） */
 export function exportFileName(exhibition: string, now: Date): string {
   const safe = exhibition.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 40)
   const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`
-  return `ExhibitionLeadLog_${safe ? `${safe}_` : ''}${stamp}.xlsx`
+  return `LeadLog_${safe ? `${safe}_` : ''}${stamp}.xlsx`
 }

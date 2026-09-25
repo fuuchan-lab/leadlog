@@ -57,51 +57,158 @@ export function otsuThreshold(gray: Uint8Array): number {
 }
 
 /**
- * 写真の中央にある名刺・バッジの四隅を探す。
- * 名刺は背景と明るさが違うことが多いので、明るい部分と暗い部分に分け、中央を含むかたまりを名刺とみなす。
- * かたまりが小さすぎる・画面いっぱい（背景と区別できない）場合は null。
+ * 写真の中の名刺・バッジの四隅を探す（小さく縮めた画像で使う）。見つからなければ null。
+ *
+ * 名刺と背景の見分け方を2通り試し、いちばん「四角らしい」ものを選ぶ:
+ * - 明るさ（白い名刺と暗い机など）
+ * - 背景の色との違い（写真の外周の色を背景とみなす。明るさが近くても色が違えば分かれる）
+ * どちらも、中央に最も近いかたまりを名刺とみなし、名刺の文字などでできた穴は埋め、
+ * かたまりの外形（凸包）に最もよく合う四角形を四隅とする（斜めに置いた名刺にも合う）。
  */
-export function detectQuad(gray: Uint8Array, width: number, height: number): Quad | null {
+export function detectDocument(img: RGBAImage): Quad | null {
+  const { width, height } = img
+  const gray = toGray(img)
+  const masks: Uint8Array[] = []
+
+  // 1. 明るさで分ける。中央付近で多い方（明るい・暗い）を名刺の側とする
   const t = otsuThreshold(gray)
-  // 中央付近で多い方（明るい・暗い）を、名刺の色とする
-  let bright = 0
+  const brightMask = new Uint8Array(gray.length)
+  for (let i = 0; i < gray.length; i++) brightMask[i] = gray[i] > t ? 1 : 0
+  masks.push(centerMajority(brightMask, width, height) ? brightMask : invert(brightMask))
+
+  // 2. 背景（外周）の色との違いで分ける
+  const bg = borderMeanColor(img)
+  const dist = new Uint8Array(gray.length)
+  for (let i = 0, p = 0; i < dist.length; i++, p += 4) {
+    const d = Math.hypot(img.data[p] - bg[0], img.data[p + 1] - bg[1], img.data[p + 2] - bg[2])
+    dist[i] = Math.min(255, Math.round(d))
+  }
+  const td = Math.max(20, otsuThreshold(dist))
+  const colorMask = new Uint8Array(gray.length)
+  for (let i = 0; i < dist.length; i++) colorMask[i] = dist[i] > td ? 1 : 0
+  masks.push(colorMask)
+
+  let best: { quad: Quad; score: number } | null = null
+  for (const raw of masks) {
+    // 名刺の縁まである文字などの小さなすき間を埋めてから（閉じる）、
+    // 細いつながり（名刺と背景の境目のかすれ・影）を切り、小さな点を消す（開く）
+    const closed = erode(dilate(raw, width, height, 2), width, height, 2)
+    const mask = dilate(erode(closed, width, height, 2), width, height, 2)
+    const found = shapeNearCenter(mask, width, height)
+    if (!found) continue
+    const ratio = found.area / (width * height)
+    if (ratio < 0.08 || ratio > 0.95) continue
+    const quad = quadFromHull(found.hull)
+    if (!quad) continue
+    const qa = quadArea(quad)
+    if (qa < width * height * 0.05) continue
+    // かたまりの面積と四角形の面積が近いほど「四角らしい」
+    const rect = Math.min(found.area, qa) / Math.max(found.area, qa)
+    if (rect < 0.85) continue
+    const score = rect + ratio * 0.2
+    if (!best || score > best.score) best = { quad, score }
+  }
+  return best?.quad ?? null
+}
+
+/** 以前の呼び方（グレーの画像だけで探す）。明るさだけで判定する */
+export function detectQuad(gray: Uint8Array, width: number, height: number): Quad | null {
+  const data = new Uint8ClampedArray(width * height * 4)
+  for (let i = 0; i < gray.length; i++) {
+    data[i * 4] = data[i * 4 + 1] = data[i * 4 + 2] = gray[i]
+    data[i * 4 + 3] = 255
+  }
+  return detectDocument({ data, width, height })
+}
+
+function invert(mask: Uint8Array): Uint8Array {
+  const out = new Uint8Array(mask.length)
+  for (let i = 0; i < mask.length; i++) out[i] = mask[i] ? 0 : 1
+  return out
+}
+
+/** 中央付近（縦横 40〜60%）で、印の付いた画素が半分以上か */
+function centerMajority(mask: Uint8Array, width: number, height: number): boolean {
+  let on = 0
   let count = 0
-  const cx0 = Math.floor(width * 0.4)
-  const cx1 = Math.ceil(width * 0.6)
-  const cy0 = Math.floor(height * 0.4)
-  const cy1 = Math.ceil(height * 0.6)
-  for (let y = cy0; y < cy1; y++) {
-    for (let x = cx0; x < cx1; x++) {
-      if (gray[y * width + x] > t) bright++
+  for (let y = Math.floor(height * 0.4); y < Math.ceil(height * 0.6); y++) {
+    for (let x = Math.floor(width * 0.4); x < Math.ceil(width * 0.6); x++) {
+      on += mask[y * width + x]
       count++
     }
   }
-  const cardIsBright = bright * 2 >= count
-  const inCard = (i: number) => (gray[i] > t) === cardIsBright
+  return on * 2 >= count
+}
 
-  // 中央に最も近い「名刺の色」の画素から、つながっている部分を塗りつぶして集める
-  const start = findNearestToCenter(width, height, inCard)
+/** 写真の外周（幅の 3%）の平均の色。背景の色とみなす */
+function borderMeanColor({ data, width, height }: RGBAImage): [number, number, number] {
+  const m = Math.max(1, Math.round(Math.min(width, height) * 0.03))
+  const sum = [0, 0, 0]
+  let n = 0
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (x >= m && x < width - m && y >= m && y < height - m) continue
+      const p = (y * width + x) * 4
+      sum[0] += data[p]
+      sum[1] += data[p + 1]
+      sum[2] += data[p + 2]
+      n++
+    }
+  }
+  return [sum[0] / n, sum[1] / n, sum[2] / n]
+}
+
+/** 縮める（周り r 画素がすべて印付きの画素だけ残す） */
+function erode(mask: Uint8Array, width: number, height: number, r: number): Uint8Array {
+  return morph(mask, width, height, r, 0)
+}
+
+/** 太らせる（周り r 画素のどれかが印付きなら印を付ける） */
+function dilate(mask: Uint8Array, width: number, height: number, r: number): Uint8Array {
+  return morph(mask, width, height, r, 1)
+}
+
+/** 横・縦の2回に分けて、四角い範囲の最小（keep=0）・最大（keep=1）を取る */
+function morph(mask: Uint8Array, width: number, height: number, r: number, keep: 0 | 1): Uint8Array {
+  const pass = (src: Uint8Array, horizontal: boolean) => {
+    const out = new Uint8Array(src.length)
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let v = keep === 1 ? 0 : 1
+        for (let k = -r; k <= r; k++) {
+          const xx = horizontal ? x + k : x
+          const yy = horizontal ? y : y + k
+          // 画像の外は、縮める時は印付き（外周に接した名刺を削らない）、太らせる時は印なしとみなす
+          const s = xx < 0 || yy < 0 || xx >= width || yy >= height ? 1 - keep : src[yy * width + xx]
+          if (s === keep) {
+            v = keep
+            break
+          }
+        }
+        out[y * width + x] = v
+      }
+    }
+    return out
+  }
+  return pass(pass(mask, true), false)
+}
+
+/**
+ * 中央に最も近い、印付きの画素のかたまりを集め、中の穴を埋めた面積と、外形の点（各行の左端・右端）の凸包を返す
+ */
+function shapeNearCenter(mask: Uint8Array, width: number, height: number): { area: number; hull: Point[] } | null {
+  const start = findNearestToCenter(width, height, (i) => mask[i] === 1)
   if (start < 0) return null
-  const visited = new Uint8Array(width * height)
+  const inShape = new Uint8Array(mask.length)
   const stack = [start]
-  visited[start] = 1
-  let area = 0
-  let tl = { v: Infinity, i: start }
-  let br = { v: -Infinity, i: start }
-  let tr = { v: -Infinity, i: start }
-  let bl = { v: -Infinity, i: start }
+  inShape[start] = 1
   while (stack.length > 0) {
     const i = stack.pop()!
-    area++
     const x = i % width
     const y = (i - x) / width
-    if (x + y < tl.v) tl = { v: x + y, i }
-    if (x + y > br.v) br = { v: x + y, i }
-    if (x - y > tr.v) tr = { v: x - y, i }
-    if (y - x > bl.v) bl = { v: y - x, i }
     const visit = (j: number) => {
-      if (visited[j] || !inCard(j)) return
-      visited[j] = 1
+      if (inShape[j] || !mask[j]) return
+      inShape[j] = 1
       stack.push(j)
     }
     if (x > 0) visit(i - 1)
@@ -109,13 +216,113 @@ export function detectQuad(gray: Uint8Array, width: number, height: number): Qua
     if (y > 0) visit(i - width)
     if (y < height - 1) visit(i + width)
   }
-  const ratio = area / (width * height)
-  if (ratio < 0.08 || ratio > 0.97) return null
-  const pt = (i: number): Point => ({ x: i % width, y: Math.floor(i / width) })
-  const quad: Quad = [pt(tl.i), pt(tr.i), pt(br.i), pt(bl.i)]
-  // 四隅がつぶれている（細長すぎる・面積がほとんどない）場合は、見つからなかったことにする
-  if (quadArea(quad) < width * height * 0.05) return null
-  return quad
+  // 穴を埋める: 外周からたどれる「かたまりの外」以外は、すべてかたまりとみなす
+  const outside = new Uint8Array(mask.length)
+  const queue: number[] = []
+  const seed = (i: number) => {
+    if (!outside[i] && !inShape[i]) {
+      outside[i] = 1
+      queue.push(i)
+    }
+  }
+  for (let x = 0; x < width; x++) {
+    seed(x)
+    seed((height - 1) * width + x)
+  }
+  for (let y = 0; y < height; y++) {
+    seed(y * width)
+    seed(y * width + width - 1)
+  }
+  while (queue.length > 0) {
+    const i = queue.pop()!
+    const x = i % width
+    const y = (i - x) / width
+    if (x > 0) seed(i - 1)
+    if (x < width - 1) seed(i + 1)
+    if (y > 0) seed(i - width)
+    if (y < height - 1) seed(i + width)
+  }
+  let area = 0
+  const points: Point[] = []
+  for (let y = 0; y < height; y++) {
+    let left = -1
+    let right = -1
+    for (let x = 0; x < width; x++) {
+      if (outside[y * width + x]) continue
+      area++
+      if (left < 0) left = x
+      right = x
+    }
+    if (left >= 0) points.push({ x: left, y }, { x: right, y })
+  }
+  return area > 0 ? { area, hull: convexHull(points) } : null
+}
+
+/** 凸包（Andrew の方法）。反時計回り（画像の座標では時計回りに見える）の順 */
+export function convexHull(points: Point[]): Point[] {
+  const pts = [...points].sort((a, b) => a.x - b.x || a.y - b.y)
+  if (pts.length < 3) return pts
+  const cross = (o: Point, a: Point, b: Point) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
+  const lower: Point[] = []
+  for (const p of pts) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop()
+    lower.push(p)
+  }
+  const upper: Point[] = []
+  for (let i = pts.length - 1; i >= 0; i--) {
+    const p = pts[i]
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop()
+    upper.push(p)
+  }
+  return [...lower.slice(0, -1), ...upper.slice(0, -1)]
+}
+
+/**
+ * 凸包に合う四角形。最も離れた2点（長方形なら対角）と、その線から両側に最も離れた点を四隅とし、
+ * 左上・右上・右下・左下の順に並べる
+ */
+export function quadFromHull(hull: Point[]): Quad | null {
+  if (hull.length < 4) return null
+  let a = 0
+  let b = 1
+  let bestD = -1
+  for (let i = 0; i < hull.length; i++) {
+    for (let j = i + 1; j < hull.length; j++) {
+      const d = (hull[i].x - hull[j].x) ** 2 + (hull[i].y - hull[j].y) ** 2
+      if (d > bestD) {
+        bestD = d
+        a = i
+        b = j
+      }
+    }
+  }
+  const pa = hull[a]
+  const pb = hull[b]
+  const side = (p: Point) => (pb.x - pa.x) * (p.y - pa.y) - (pb.y - pa.y) * (p.x - pa.x)
+  let c: Point | null = null
+  let d: Point | null = null
+  for (const p of hull) {
+    const s = side(p)
+    if (s > 0 && (!c || s > side(c))) c = p
+    if (s < 0 && (!d || s < side(d))) d = p
+  }
+  if (!c || !d) return null
+  return orderQuad([pa, c, pb, d])
+}
+
+/** 凸な四角形の4点（周の順）を、左上から時計回り（画像の座標）に並べ直す */
+function orderQuad(pts: Point[]): Quad {
+  // 画像の座標（y が下向き）で時計回りにする
+  let s = 0
+  for (let i = 0; i < 4; i++) {
+    const p = pts[i]
+    const q = pts[(i + 1) % 4]
+    s += p.x * q.y - q.x * p.y
+  }
+  const cw = s > 0 ? pts : [...pts].reverse()
+  let start = 0
+  for (let i = 1; i < 4; i++) if (cw[i].x + cw[i].y < cw[start].x + cw[start].y) start = i
+  return [0, 1, 2, 3].map((k) => cw[(start + k) % 4]) as Quad
 }
 
 function findNearestToCenter(width: number, height: number, inCard: (i: number) => boolean): number {

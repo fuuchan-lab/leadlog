@@ -1,4 +1,4 @@
-# 展示会リードログ / Exhibition LeadLog
+# リードログ / LeadLog
 
 展示会で交換した名刺・展示会バッジを撮影し、書類のように補正して文字を読み取り（OCR）、リード（見込み客）として記録する Web アプリ（PWA）です。
 会社の共有 Google アカウントでログインした最大10台の端末のリードを、Google ドライブの1つのフォルダーに集約します。
@@ -20,7 +20,7 @@ CapLog・頭痛ログと同じ構成です（React + TypeScript + Vite、Google 
 - **設定**：展示会名・会場・会期・開場時間、重要度（初期 A〜E）・顧客の種類・興味のある分野・次のアクションの編集（全員で共有）、登録者名、言語（日本語/English）、配色。
 - **画面**：スマホ（縦長）は1列、PC などの横長の大きい画面（幅 1024px 以上）は2列。
 
-## Google ドライブのフォルダー（Exhibition_LeadLog）
+## Google ドライブのフォルダー（LeadLog）
 
 | ファイル | 内容 |
 | --- | --- |
@@ -28,7 +28,7 @@ CapLog・頭痛ログと同じ構成です（React + TypeScript + Vite、Google 
 | `card-<画像ID>.jpg` | 補正した名刺・バッジの画像 |
 | `device-<端末ID>.json` | 端末の登録（最大10台） |
 | `settings.json` | 全員共通の設定 |
-| `ExhibitionLeadLog_*.xlsx` | Excel に書き出したもの |
+| `LeadLog_*.xlsx` | Excel に書き出したもの |
 
 ## 開発
 

@@ -1,12 +1,12 @@
 /**
  * 端末（IndexedDB）と Google ドライブの同期。
  *
- * ドライブの Exhibition_LeadLog フォルダーには、次のファイルを置く。
+ * ドライブの LeadLog フォルダーには、次のファイルを置く。
  * - leads-<端末ID>.json … その端末が最後に更新したリード（端末ごとに分けて、同時に書いても消し合わない。詳しくは syncMerge.ts）
  * - card-<画像ID>.jpg … 補正した名刺・バッジの画像（名前が重ならないので、どの端末が書いても衝突しない）
  * - device-<端末ID>.json … 使っている端末の登録（最大10台。devices.ts）
  * - settings.json … 全員共通の設定（展示会・重要度・顧客の種類）
- * - ExhibitionLeadLog_*.xlsx … Excel に書き出したもの
+ * - LeadLog_*.xlsx … Excel に書き出したもの
  *
  * 他の端末の画像は、一覧で表示する時に必要な分だけ取りに行く（展示会場の回線に負担をかけないため）。
  */

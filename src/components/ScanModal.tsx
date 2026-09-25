@@ -10,10 +10,12 @@ interface Props {
   found: boolean
   onApply: (quad: Quad, rotation: number) => void
   onClose: () => void
+  /** 撮り直す（写真がぶれた・名刺が写りきっていない時） */
+  onRetake: () => void
 }
 
 /** 撮った写真の上で、名刺・バッジの四隅を合わせる。四隅の丸はドラッグで動かせる */
-export function ScanModal({ image, initialQuad, found, onApply, onClose }: Props) {
+export function ScanModal({ image, initialQuad, found, onApply, onClose, onRetake }: Props) {
   const { t } = useI18n()
   const [quad, setQuad] = useState<Quad>(initialQuad)
   const [rotation, setRotation] = useState(0)
@@ -87,6 +89,10 @@ export function ScanModal({ image, initialQuad, found, onApply, onClose }: Props
             ))}
           </svg>
         </div>
+        {/* 写真が悪い時のため、写真のすぐ下に「再撮影」 */}
+        <button className="secondary retake-button" onClick={onRetake}>
+          {t('scan.retake')}
+        </button>
         <div className="row scan-actions">
           <span>
             <button className="secondary" onClick={() => setRotation((v) => (v + 1) % 4)}>

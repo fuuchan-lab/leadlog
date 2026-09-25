@@ -11,8 +11,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'favicon-16.png', 'favicon-32.png', 'apple-touch-icon.png'],
       manifest: {
-        name: '展示会リードログ',
-        short_name: '展示会リードログ',
+        name: 'リードログ',
+        short_name: 'リードログ',
         description: '展示会で交換した名刺・バッジを読み取り、リードとして記録・共有します',
         lang: 'ja',
         id: './',

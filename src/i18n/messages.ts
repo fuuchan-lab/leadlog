@@ -1,6 +1,6 @@
 /** 画面の文言。日本語を基準にし、英語は同じキーをすべて持つ（足りないと型エラーになる） */
 export const ja = {
-  'app.title': '展示会リードログ',
+  'app.title': 'リードログ',
   'common.close': '閉じる',
   'common.note': 'メモ',
   'common.cancel': 'キャンセル',
@@ -12,7 +12,7 @@ export const ja = {
 
   // ヘッダー・アカウント
   'header.eyebrow': '展示会 名刺・リード記録簿',
-  'header.title': '展示会リードログ',
+  'header.title': 'リードログ',
   'header.openSettings': '設定を開く',
   'header.settings': '設定',
   'header.back': '戻る',
@@ -82,6 +82,7 @@ export const ja = {
   'scan.help': '四隅の丸をドラッグして、名刺・バッジの角に合わせてください。',
   'scan.notFound': '名刺の輪郭を自動で見つけられませんでした。四隅を手で合わせてください。',
   'scan.rotate': '↻ 回転',
+  'scan.retake': '📷 再撮影',
   'scan.reset': '全体',
   'scan.apply': 'この範囲で読み取る',
   'scan.loading': '画像を読み込んでいます…',
@@ -231,7 +232,7 @@ export const ja = {
 export type MessageKey = keyof typeof ja
 
 export const en: Record<MessageKey, string> = {
-  'app.title': 'Exhibition LeadLog',
+  'app.title': 'LeadLog',
   'common.close': 'Close',
   'common.note': 'Note',
   'common.cancel': 'Cancel',
@@ -242,7 +243,7 @@ export const en: Record<MessageKey, string> = {
   'common.none': '(none)',
 
   'header.eyebrow': 'Trade show lead capture',
-  'header.title': 'Exhibition LeadLog',
+  'header.title': 'LeadLog',
   'header.openSettings': 'Open settings',
   'header.settings': 'Settings',
   'header.back': 'Back',
@@ -309,6 +310,7 @@ export const en: Record<MessageKey, string> = {
   'scan.help': 'Drag the corner dots onto the corners of the card or badge.',
   'scan.notFound': 'Could not find the card outline automatically. Please drag the corners into place.',
   'scan.rotate': '↻ Rotate',
+  'scan.retake': '📷 Retake',
   'scan.reset': 'Whole',
   'scan.apply': 'Read this area',
   'scan.loading': 'Loading image…',

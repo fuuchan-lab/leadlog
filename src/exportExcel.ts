@@ -26,7 +26,7 @@ export interface ExportResult {
   id?: string
 }
 
-/** Google ドライブの Exhibition_LeadLog フォルダーに保存する。書き出すたびに、時刻入りの名前の新しいファイルを作る */
+/** Google ドライブの LeadLog フォルダーに保存する。書き出すたびに、時刻入りの名前の新しいファイルを作る */
 export async function exportToDrive(leads: Lead[], settings: SharedSettings, t: TFn, lang: Lang, exhibition: string): Promise<ExportResult> {
   const blob = await buildWorkbook(leads, settings, t, lang)
   const folderId = await ensureFolder()

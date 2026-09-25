@@ -1804,7 +1804,7 @@ input[type='datetime-local'] {
   font-weight: 600;
 }
 
-/* アプリ名が長い（英語: Exhibition LeadLog）ので、見出しを少し小さくして設定・ログインのボタンと重ならないようにする */
+/* アプリ名が画面の幅に対して長い場合に備えて、見出しを少し小さくして設定・ログインのボタンと重ならないようにする */
 .brand-text h1 {
   font-size: clamp(1.15rem, 5.4vw, 2rem);
 }
@@ -1817,4 +1817,14 @@ input[type='datetime-local'] {
 .brand-text h1 {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* 「再撮影」ボタン（写真のすぐ下） */
+.retake-button {
+  width: 100%;
+  margin-top: 8px;
+}
+.scan-result-block {
+  display: flex;
+  flex-direction: column;
 }

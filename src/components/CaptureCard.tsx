@@ -45,6 +45,10 @@ export function CaptureCard({ lists, member, leads, exhibition, memberReady, onS
   const [ocrText, setOcrText] = useState('')
   const [message, setMessage] = useState<Message>(null)
   const [saving, setSaving] = useState(false)
+  /** 前回の画像を選んだ方法（撮影 / 画像を選ぶ）。「再撮影」で同じ方法を開く */
+  const [source, setSource] = useState<'camera' | 'pick'>('camera')
+  /** OCR が入れた欄とその値。再撮影の時、手で直していない欄だけ消すために使う */
+  const [ocrFilled, setOcrFilled] = useState<Partial<Record<keyof LeadFields, string>>>({})
 
   const setPhotoBlob = (blob: Blob | null) => {
     setPhoto((cur) => {
@@ -57,7 +61,34 @@ export function CaptureCard({ lists, member, leads, exhibition, memberReady, onS
     setFields(EMPTY_FIELDS)
     setPhotoBlob(null)
     setOcrText('')
+    setOcrFilled({})
     setOpen(false)
+  }
+
+  const openPicker = (from: 'camera' | 'pick') => {
+    setSource(from)
+    ;(from === 'camera' ? cameraRef : pickRef).current?.click()
+  }
+
+  /**
+   * 撮り直す。写真がぶれた・読み取りがうまくいかなかった時のため。
+   * OCR が入れた欄のうち、手で直していないものは消す（新しい写真の読み取り結果を入れ直すため）。
+   * 手で入力した欄（重要度・メモなど）はそのまま残す
+   */
+  const retake = () => {
+    setFields((cur) => {
+      const next = { ...cur }
+      for (const [k, v] of Object.entries(ocrFilled) as [keyof LeadFields, string][]) {
+        if (next[k] === v) (next as Record<string, unknown>)[k] = ''
+      }
+      return next
+    })
+    setOcrFilled({})
+    setPhotoBlob(null)
+    setOcrText('')
+    setMessage(null)
+    setStage({ kind: 'idle' })
+    openPicker(source)
   }
 
   const onFile = async (file: File | undefined) => {
@@ -103,6 +134,8 @@ export function CaptureCard({ lists, member, leads, exhibition, memberReady, onS
         }
         return next
       })
+      // 再撮影の時は、欄の値がこの読み取り結果のまま（手で直していない）なら消す
+      setOcrFilled(Object.fromEntries(Object.entries(found).filter(([, v]) => v !== '')))
       setMessage({ kind: 'ok', text: t('ocr.done') })
     } catch (e) {
       console.error('[ocr]', e)
@@ -145,10 +178,10 @@ export function CaptureCard({ lists, member, leads, exhibition, memberReady, onS
       <p className="muted small">{t('capture.help')}</p>
       {!memberReady && <p className="banner banner-caution">{t('capture.needMember')}</p>}
       <div className="capture-buttons">
-        <button className="primary" disabled={busy || !memberReady} onClick={() => cameraRef.current?.click()}>
+        <button className="primary" disabled={busy || !memberReady} onClick={() => openPicker('camera')}>
           {t('capture.camera')}
         </button>
-        <button className="secondary" disabled={busy || !memberReady} onClick={() => pickRef.current?.click()}>
+        <button className="secondary" disabled={busy || !memberReady} onClick={() => openPicker('pick')}>
           {t('capture.pick')}
         </button>
         <button className="secondary" disabled={busy || !memberReady} onClick={() => setOpen(true)}>
@@ -200,7 +233,15 @@ export function CaptureCard({ lists, member, leads, exhibition, memberReady, onS
 
       {open && (
         <div className="editor">
-          {photo && <img className="scan-result" src={photo.url} alt={t('form.photo')} />}
+          {photo && (
+            <div className="scan-result-block">
+              <img className="scan-result" src={photo.url} alt={t('form.photo')} />
+              {/* 写真が悪かった時に撮り直す */}
+              <button className="secondary retake-button" disabled={busy} onClick={retake}>
+                {t('scan.retake')}
+              </button>
+            </div>
+          )}
           {ocrText && (
             <details className="ocr-text">
               <summary>{t('ocr.showText')}</summary>
@@ -225,6 +266,7 @@ export function CaptureCard({ lists, member, leads, exhibition, memberReady, onS
           initialQuad={stage.quad}
           found={stage.found}
           onClose={() => setStage({ kind: 'idle' })}
+          onRetake={retake}
           onApply={(quad, rotation) => void apply(stage.image, quad, rotation)}
         />
       )}

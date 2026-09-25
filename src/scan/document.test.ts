@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
   applyHomography,
+  detectDocument,
   detectQuad,
   enhanceDocument,
   homography,
@@ -27,11 +28,16 @@ function syntheticCard(width: number, height: number): Uint8Array {
 test('名刺の四隅を見つける', () => {
   const quad = detectQuad(syntheticCard(200, 100), 200, 100)
   assert.ok(quad)
-  const [tl, tr, br, bl] = quad
-  assert.deepEqual(tl, { x: 30, y: 20 })
-  assert.ok(Math.abs(tr.x - 129) <= 1 && tr.y === 20)
-  assert.ok(Math.abs(br.x - 141) <= 1 && br.y === 79)
-  assert.ok(Math.abs(bl.x - 42) <= 1 && bl.y === 79)
+  assertNear(
+    quad,
+    [
+      { x: 30, y: 20 },
+      { x: 129, y: 20 },
+      { x: 141, y: 79 },
+      { x: 42, y: 79 },
+    ],
+    2,
+  )
 })
 
 test('背景と区別できない（一面同じ明るさ）場合は null', () => {
@@ -118,4 +124,87 @@ test('90度回すと、幅と高さが入れ替わる', () => {
   // 右に回すと、左上は右上に来る
   assert.equal(r.data[1 * 4], 255)
   assert.equal(rotate90(img, 4), img)
+})
+
+/** 背景色 bg の上に、四角形 poly を色 fg で塗った画像。text が true なら中に暗い文字の帯を入れる */
+function scene(width: number, height: number, bg: number[], fg: number[], poly: Quad, text = false): RGBAImage {
+  const data = new Uint8ClampedArray(width * height * 4)
+  const inside = (x: number, y: number) => {
+    let sign = 0
+    for (let i = 0; i < 4; i++) {
+      const a = poly[i]
+      const b = poly[(i + 1) % 4]
+      const c = Math.sign((b.x - a.x) * (y - a.y) - (b.y - a.y) * (x - a.x))
+      if (c !== 0) {
+        if (sign === 0) sign = c
+        else if (c !== sign) return false
+      }
+    }
+    return true
+  }
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const p = (y * width + x) * 4
+      let c = inside(x + 0.5, y + 0.5) ? fg : bg
+      // 名刺の中の文字（横長の暗い帯）
+      if (text && c === fg && y % 12 < 4 && x % 40 < 30) c = [20, 20, 20]
+      data[p] = c[0]
+      data[p + 1] = c[1]
+      data[p + 2] = c[2]
+      data[p + 3] = 255
+    }
+  }
+  return { data, width, height }
+}
+
+function rotatedRect(cx: number, cy: number, w: number, h: number, deg: number): Quad {
+  const r = (deg * Math.PI) / 180
+  const pts = [
+    [-w / 2, -h / 2],
+    [w / 2, -h / 2],
+    [w / 2, h / 2],
+    [-w / 2, h / 2],
+  ].map(([x, y]) => ({ x: cx + x * Math.cos(r) - y * Math.sin(r), y: cy + x * Math.sin(r) + y * Math.cos(r) }))
+  return pts as Quad
+}
+
+function assertNear(found: Quad | null, expected: Quad, tol: number) {
+  assert.ok(found, 'quad should be found')
+  // 同じ角同士で比べる（並びは左上から時計回り）
+  const sorted = (q: Quad) => [...q].sort((a, b) => a.x + a.y - (b.x + b.y))
+  const f = sorted(found)
+  const e = sorted(expected)
+  for (let i = 0; i < 4; i++) {
+    const d = Math.hypot(f[i].x - e[i].x, f[i].y - e[i].y)
+    assert.ok(d <= tol, `corner ${i}: found (${f[i].x},${f[i].y}) expected (${e[i].x.toFixed(1)},${e[i].y.toFixed(1)})`)
+  }
+}
+
+test('斜めに置いた名刺（30度）の四隅を見つける', () => {
+  const card = rotatedRect(160, 120, 170, 100, 30)
+  assertNear(detectDocument(scene(320, 240, [50, 50, 55], [235, 235, 230], card)), card, 5)
+})
+
+test('明るさが近くても、背景と色が違えば見つける（青い机の上のベージュの名刺）', () => {
+  const card = rotatedRect(160, 120, 190, 110, -8)
+  assertNear(detectDocument(scene(320, 240, [70, 110, 190], [190, 170, 120], card)), card, 5)
+})
+
+test('文字が多い名刺でも、文字の穴で形が崩れない', () => {
+  const card = rotatedRect(160, 120, 200, 120, 5)
+  assertNear(detectDocument(scene(320, 240, [40, 40, 40], [240, 240, 240], card, true)), card, 5)
+})
+
+test('影で背景の明るさにムラがあっても見つける', () => {
+  const card = rotatedRect(160, 120, 180, 110, 12)
+  const img = scene(320, 240, [90, 90, 90], [230, 228, 222], card)
+  // 右下へ行くほど暗くなる影
+  for (let y = 0; y < 240; y++) {
+    for (let x = 0; x < 320; x++) {
+      const p = (y * 320 + x) * 4
+      const k = 1 - (x + y) / 1400
+      for (let c = 0; c < 3; c++) img.data[p + c] = img.data[p + c] * k
+    }
+  }
+  assertNear(detectDocument(img), card, 6)
 })

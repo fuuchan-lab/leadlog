@@ -1,12 +1,11 @@
 /** 画像ファイルとキャンバスのやり取り（ブラウザ機能を使う部分）。計算そのものは document.ts */
 import {
   defaultQuad,
-  detectQuad,
+  detectDocument,
   enhanceDocument,
   outputSize,
   rotate90,
   scaleQuad,
-  toGray,
   warpQuad,
   type Quad,
   type RGBAImage,
@@ -15,7 +14,7 @@ import {
 /** 読み込む写真の長辺の上限。スマホの写真（4000px 以上）をそのまま扱うと重いため */
 const LOAD_MAX_SIDE = 2400
 /** 四隅を探す時の長辺。小さくして速くする */
-const DETECT_MAX_SIDE = 480
+const DETECT_MAX_SIDE = 360
 
 function newCanvas(width: number, height: number): HTMLCanvasElement {
   const c = document.createElement('canvas')
@@ -53,7 +52,7 @@ export function findDocument(img: RGBAImage): { quad: Quad; found: boolean } {
   const w = Math.max(1, Math.round(img.width * s))
   const h = Math.max(1, Math.round(img.height * s))
   const small = s < 1 ? readPixels(toCanvas(img), w, h) : img
-  const quad = detectQuad(toGray(small), w, h)
+  const quad = detectDocument(small)
   return quad ? { quad: scaleQuad(quad, 1 / s), found: true } : { quad: defaultQuad(img.width, img.height), found: false }
 }
 

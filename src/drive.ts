@@ -8,7 +8,9 @@ import { createTokenWaiter } from './tokenWaiter.ts'
 
 export const driveConfig = {
   // 保存先のフォルダー名。言語に関わらず同じ。同じアカウントでログインした全端末が、このフォルダーに集約する
-  folderName: 'Exhibition_LeadLog',
+  folderName: 'LeadLog',
+  // 以前のバージョンで作られたフォルダー名。見つかったら、中のデータごと folderName に名前を変えて引き継ぐ
+  legacyFolderNames: ['Exhibition_LeadLog'],
   // 公開されるクライアントID（秘密ではない）。Google Cloud のプロジェクト「LeadLog」の OAuth クライアント「LeadLog Web」。
   // 別のクライアントを使う場合は .env.local の VITE_GOOGLE_CLIENT_ID で上書きする。
   clientId:
@@ -181,6 +183,22 @@ export async function ensureFolder(): Promise<string> {
 
   const current = await findFolder(driveConfig.folderName)
   if (current) return (folderIdCache = current)
+
+  for (const legacyName of driveConfig.legacyFolderNames) {
+    const legacy = await findFolder(legacyName)
+    if (!legacy) continue
+    try {
+      await driveFetch(`https://www.googleapis.com/drive/v3/files/${legacy}?fields=id`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: driveConfig.folderName }),
+      })
+    } catch (e) {
+      // 名前を変えられなくても、旧フォルダーのまま使い続ける（同期は止めない）
+      console.error('[folder-rename]', e)
+    }
+    return (folderIdCache = legacy)
+  }
 
   const created = await driveFetch('https://www.googleapis.com/drive/v3/files?fields=id', {
     method: 'POST',
