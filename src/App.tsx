@@ -77,6 +77,7 @@ export default function App() {
             onMember={changeMember}
             leads={leads}
             loggedIn={auth.account !== null}
+            onExhibitionOpened={() => setView('home')}
           />
         </div>
       ) : (

@@ -21,6 +21,8 @@ interface Props {
   leads: Lead[]
   /** Google にログインしているか（ドライブへの保存に必要） */
   loggedIn: boolean
+  /** 「既存の展示会を開く」で展示会を開いた後、ホームの画面に戻る */
+  onExhibitionOpened: () => void
 }
 
 type ExportState =
@@ -31,7 +33,7 @@ type ExportState =
 
 type OcrState = { status: 'idle' | 'ready' | 'error' } | { status: 'busy'; p: number }
 
-export function SettingsPage({ shared, member, onMember, leads, loggedIn }: Props) {
+export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhibitionOpened }: Props) {
   const { t, lang, setLang } = useI18n()
   const [theme, setTheme] = useState<ThemePreference>(loadTheme)
   const [memberDraft, setMemberDraft] = useState(member)
@@ -79,7 +81,7 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn }: Prop
         </span>
       </a>
 
-      <ExhibitionCard shared={shared} leads={leads} />
+      <ExhibitionCard shared={shared} leads={leads} onOpened={onExhibitionOpened} />
 
       <section className="card">
         <div className="row">

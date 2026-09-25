@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react'
 import { putPhoto } from '../db.ts'
 import { describeError } from '../errors.ts'
-import { useLeaveGuard } from '../leaveGuard.ts'
-import { shrinkLogo } from '../scan/logo.ts'
 import { belongsTo, dayCount, newExhibition, parseDate, type Exhibition } from '../exhibitions.ts'
 import type { ExhibitionFields, SharedSettingsState } from '../hooks/useSharedSettings.ts'
 import { LOCALES } from '../i18n/context.ts'
 import { useI18n } from '../i18n/useI18n.ts'
+import { useLeaveGuard } from '../leaveGuard.ts'
+import { shrinkLogo } from '../scan/logo.ts'
 import type { Lead } from '../types.ts'
 import { DateRangePicker } from './DateRangePicker.tsx'
 import { HourRangePicker } from './HourRangePicker.tsx'
@@ -15,9 +15,12 @@ import { LeadPhoto } from './LeadPhoto.tsx'
 interface Props {
   shared: SharedSettingsState
   leads: Lead[]
+  /** 一覧で選んだ展示会を「既存の展示会を開く」で開いた後、ホームの画面に戻る */
+  onOpened: () => void
 }
 
-type Tab = 'edit' | 'new' | 'open'
+/** 下の入力欄が「編集」（開いている展示会を直す）か「新しい展示会」を作るか */
+type FormTab = 'edit' | 'new'
 
 const fieldsOf = (e: Exhibition): ExhibitionFields => ({
   name: e.name,
@@ -30,25 +33,36 @@ const fieldsOf = (e: Exhibition): ExhibitionFields => ({
 })
 
 /**
- * 設定の「展示会」。開いている展示会の編集、新しい展示会の作成、既存の展示会を開く、を切り替える。
+ * 設定の「展示会」。
+ * 上から順に: この端末で開いている展示会 → 展示会の一覧（選べる。🗑 で削除） →
+ * 「編集・新しい展示会・既存の展示会を開く」のボタン → 選んだボタンに応じた入力欄。
+ * 「既存の展示会を開く」は、一覧で選んだ展示会をこの端末で開き、ホームの画面に戻る。
  * 展示会の一覧と内容は全員で共有し、どれを開くかは端末ごと
  */
-export function ExhibitionCard({ shared, leads }: Props) {
+export function ExhibitionCard({ shared, leads, onOpened }: Props) {
   const { t, lang } = useI18n()
   const { current, exhibitions } = shared
-  const [tab, setTab] = useState<Tab>(current ? 'edit' : 'new')
+  const [tab, setTab] = useState<FormTab>(current ? 'edit' : 'new')
   const [draft, setDraft] = useState<ExhibitionFields>(() => fieldsOf(current ?? newExhibition('draft')))
   const [saved, setSaved] = useState(false)
   const logoInput = useRef<HTMLInputElement>(null)
   const [logoError, setLogoError] = useState<string | null>(null)
   /** コピーして新規作成した時の、コピー元の展示会名 */
   const [copiedFrom, setCopiedFrom] = useState<string | null>(null)
+  /** 一覧で選んでいる展示会（「既存の展示会を開く」で開く対象）。初めは、いま開いているものを選んでおく */
+  const [pickedId, setPickedId] = useState<string | null>(current?.id ?? null)
+  // ほかの操作（別の端末での切り替え・展示会を開いた直後など）で、開いている展示会が変わったら、選択もそれに合わせる
+  const lastCurrentId = useRef(current?.id ?? null)
+  if (lastCurrentId.current !== (current?.id ?? null)) {
+    lastCurrentId.current = current?.id ?? null
+    setPickedId(current?.id ?? null)
+  }
 
   const fmt = (s: string) => parseDate(s).toLocaleDateString(LOCALES[lang], { month: 'numeric', day: 'numeric', weekday: 'short' })
   const period = (e: Pick<Exhibition, 'startDate' | 'endDate'>) =>
     `${fmt(e.startDate)} 〜 ${fmt(e.endDate)}（${t('exhibition.dayCount', { n: dayCount(e) })}）`
 
-  const switchTab = (next: Tab) => {
+  const switchTab = (next: FormTab) => {
     setTab(next)
     setSaved(false)
     setCopiedFrom(null)
@@ -116,6 +130,13 @@ export function ExhibitionCard({ shared, leads }: Props) {
     } else if (current) shared.updateExhibition(current.id, cleaned)
   })
 
+  /** 一覧で選んだ展示会を開いて、ホームの画面に戻る */
+  const openPicked = () => {
+    if (!pickedId) return
+    shared.openExhibition(pickedId)
+    onOpened()
+  }
+
   return (
     <section className="card">
       <h2>{t('exhibition.title')}</h2>
@@ -130,38 +151,20 @@ export function ExhibitionCard({ shared, leads }: Props) {
         <p className="banner banner-info">{t('exhibition.none')}</p>
       )}
 
-      <div className="seg-tabs" role="tablist">
-        {current && (
-          <button type="button" role="tab" aria-selected={tab === 'edit'} className={tab === 'edit' ? 'on' : ''} onClick={() => switchTab('edit')}>
-            ✏️ {t('exhibition.tabEdit')}
-          </button>
-        )}
-        <button type="button" role="tab" aria-selected={tab === 'new'} className={tab === 'new' ? 'on' : ''} onClick={() => switchTab('new')}>
-          ＋ {t('exhibition.tabNew')}
-        </button>
-        {exhibitions.length > 0 && (
-          <button type="button" role="tab" aria-selected={tab === 'open'} className={tab === 'open' ? 'on' : ''} onClick={() => switchTab('open')}>
-            📂 {t('exhibition.tabOpen')}
-          </button>
-        )}
-      </div>
-
-      {tab === 'open' ? (
+      {exhibitions.length > 0 && (
         <ul className="exhibition-list">
           {exhibitions.map((e) => {
             const count = leads.filter((l) => belongsTo(l, e)).length
             const isCurrent = e.id === current?.id
+            const isPicked = e.id === pickedId
             return (
               <li key={e.id}>
                 <button
                   type="button"
-                  className={`exhibition-item${isCurrent ? ' on' : ''}`}
-                  onClick={() => {
-                    shared.openExhibition(e.id)
-                    setTab('edit')
-                    setDraft(fieldsOf(e))
-                    setSaved(false)
-                  }}
+                  role="radio"
+                  aria-checked={isPicked}
+                  className={`exhibition-item${isCurrent ? ' on' : ''}${isPicked && !isCurrent ? ' picked' : ''}`}
+                  onClick={() => setPickedId(e.id)}
                 >
                   <span>
                     <strong>{e.name || t('exhibition.untitled')}</strong>
@@ -192,142 +195,158 @@ export function ExhibitionCard({ shared, leads }: Props) {
             )
           })}
         </ul>
-      ) : (
-        <div className="editor">
-          {tab === 'edit' && current && (
-            <button type="button" className="secondary" onClick={() => copyAsNew(current)}>
-              📋 {t('exhibition.copyAsNew')}
-            </button>
-          )}
-          {tab === 'new' && copiedFrom && (
-            <p className="banner banner-info">{t('exhibition.copyNote', { name: copiedFrom })}</p>
-          )}
-          <label className="field">
-            {t('exhibition.name')}
-            <input
-              type="text"
-              maxLength={60}
-              placeholder={t('exhibition.namePlaceholder')}
-              value={draft.name}
-              onChange={(e) => set({ name: e.target.value })}
-            />
-          </label>
-          <label className="field">
-            {t('exhibition.location')}
-            <input
-              type="text"
-              maxLength={80}
-              placeholder={t('exhibition.locationPlaceholder')}
-              value={draft.location}
-              onChange={(e) => set({ location: e.target.value })}
-            />
-          </label>
-          <div className="field">
-            {t('exhibition.logo')}
-            <div className="logo-field">
-              {draft.logoId ? (
-                <LeadPhoto key={draft.logoId} id={draft.logoId} className="logo-preview" alt={t('exhibition.logo')} />
-              ) : (
-                <span className="logo-empty muted small">{t('exhibition.logoNone')}</span>
-              )}
-              <span className="logo-actions">
-                <button type="button" className="secondary" onClick={() => logoInput.current?.click()}>
-                  🖼 {t(draft.logoId ? 'exhibition.logoChange' : 'exhibition.logoPick')}
-                </button>
-                {draft.logoId && (
-                  <button type="button" className="link danger" onClick={() => set({ logoId: undefined })}>
-                    {t('common.delete')}
-                  </button>
-                )}
-              </span>
-            </div>
-            <span className="muted small">{t('exhibition.logoHelp')}</span>
-            {logoError && (
-              <span className="error small">
-                {t('scan.failed')} ({logoError})
-              </span>
+      )}
+
+      <div className="seg-tabs" role="tablist">
+        {current && (
+          <button type="button" role="tab" aria-selected={tab === 'edit'} className={tab === 'edit' ? 'on' : ''} onClick={() => switchTab('edit')}>
+            ✏️ {t('exhibition.tabEdit')}
+          </button>
+        )}
+        <button type="button" role="tab" aria-selected={tab === 'new'} className={tab === 'new' ? 'on' : ''} onClick={() => switchTab('new')}>
+          ＋ {t('exhibition.tabNew')}
+        </button>
+        {exhibitions.length > 0 && (
+          <button type="button" disabled={!pickedId} onClick={openPicked}>
+            📂 {t('exhibition.tabOpen')}
+          </button>
+        )}
+      </div>
+
+      <div className="editor">
+        {tab === 'edit' && current && (
+          <button type="button" className="secondary" onClick={() => copyAsNew(current)}>
+            📋 {t('exhibition.copyAsNew')}
+          </button>
+        )}
+        {tab === 'new' && copiedFrom && (
+          <p className="banner banner-info">{t('exhibition.copyNote', { name: copiedFrom })}</p>
+        )}
+        <label className="field">
+          {t('exhibition.name')}
+          <input
+            type="text"
+            maxLength={60}
+            placeholder={t('exhibition.namePlaceholder')}
+            value={draft.name}
+            onChange={(e) => set({ name: e.target.value })}
+          />
+        </label>
+        <label className="field">
+          {t('exhibition.location')}
+          <input
+            type="text"
+            maxLength={80}
+            placeholder={t('exhibition.locationPlaceholder')}
+            value={draft.location}
+            onChange={(e) => set({ location: e.target.value })}
+          />
+        </label>
+        <div className="field">
+          {t('exhibition.logo')}
+          <div className="logo-field">
+            {draft.logoId ? (
+              <LeadPhoto key={draft.logoId} id={draft.logoId} className="logo-preview" alt={t('exhibition.logo')} />
+            ) : (
+              <span className="logo-empty muted small">{t('exhibition.logoNone')}</span>
             )}
-            {/* capture を付けないので、スマホではアルバム（写真ライブラリ）から選べる */}
-            <input
-              ref={logoInput}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={(e) => {
-                void pickLogo(e.target.files?.[0])
-                e.target.value = ''
-              }}
-            />
-          </div>
-          <div className="field">
-            {t('exhibition.dates')}
-            <DateRangePicker
-              key={`${tab}-${current?.id ?? ''}`}
-              startDate={draft.startDate}
-              endDate={draft.endDate}
-              onChange={(r) => set(r)}
-            />
-          </div>
-          <div className="field">
-            {t('exhibition.hours')}
-            <HourRangePicker
-              key={`${tab}-${current?.id ?? ''}`}
-              startHour={draft.startHour}
-              endHour={draft.endHour}
-              onChange={(r) => set(r)}
-            />
-          </div>
-          {tab === 'new' ? (
-            <div className="row">
-              <span />
-              <button
-                className="primary"
-                disabled={!cleaned.name}
-                onClick={() => {
-                  if (!confirmCreate()) return
-                  shared.createExhibition(cleaned)
-                  setTab('edit')
-                  setCopiedFrom(null)
-                  setSaved(true)
-                }}
-              >
-                {t('exhibition.create')}
+            <span className="logo-actions">
+              <button type="button" className="secondary" onClick={() => logoInput.current?.click()}>
+                🖼 {t(draft.logoId ? 'exhibition.logoChange' : 'exhibition.logoPick')}
               </button>
-            </div>
-          ) : (
-            current && (
-              <div className="row">
-                <button
-                  className="link danger"
-                  onClick={() => {
-                    const n = leads.filter((l) => belongsTo(l, current)).length
-                    if (confirm(t('exhibition.confirmRemove', { name: current.name || t('exhibition.untitled'), n }))) {
-                      shared.removeExhibition(current.id)
-                      switchTab('open')
-                    }
-                  }}
-                >
+              {draft.logoId && (
+                <button type="button" className="link danger" onClick={() => set({ logoId: undefined })}>
                   {t('common.delete')}
                 </button>
-                <span>
-                  {saved && <span className="ok">{t('exhibition.saved')} </span>}
-                  <button
-                    className="primary"
-                    disabled={!changed || !cleaned.name}
-                    onClick={() => {
-                      shared.updateExhibition(current.id, cleaned)
-                      setSaved(true)
-                    }}
-                  >
-                    {t('common.save')}
-                  </button>
-                </span>
-              </div>
-            )
+              )}
+            </span>
+          </div>
+          <span className="muted small">{t('exhibition.logoHelp')}</span>
+          {logoError && (
+            <span className="error small">
+              {t('scan.failed')} ({logoError})
+            </span>
           )}
-          {!cleaned.name && <p className="muted small">{t('exhibition.needName')}</p>}
+          {/* capture を付けないので、スマホではアルバム（写真ライブラリ）から選べる */}
+          <input
+            ref={logoInput}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              void pickLogo(e.target.files?.[0])
+              e.target.value = ''
+            }}
+          />
         </div>
-      )}
+        <div className="field">
+          {t('exhibition.dates')}
+          <DateRangePicker
+            key={`${tab}-${current?.id ?? ''}`}
+            startDate={draft.startDate}
+            endDate={draft.endDate}
+            onChange={(r) => set(r)}
+          />
+        </div>
+        <div className="field">
+          {t('exhibition.hours')}
+          <HourRangePicker
+            key={`${tab}-${current?.id ?? ''}`}
+            startHour={draft.startHour}
+            endHour={draft.endHour}
+            onChange={(r) => set(r)}
+          />
+        </div>
+        {tab === 'new' ? (
+          <div className="row">
+            <span />
+            <button
+              className="primary"
+              disabled={!cleaned.name}
+              onClick={() => {
+                if (!confirmCreate()) return
+                shared.createExhibition(cleaned)
+                setTab('edit')
+                setCopiedFrom(null)
+                setSaved(true)
+              }}
+            >
+              {t('exhibition.create')}
+            </button>
+          </div>
+        ) : (
+          current && (
+            <div className="row">
+              <button
+                className="link danger"
+                onClick={() => {
+                  const n = leads.filter((l) => belongsTo(l, current)).length
+                  if (confirm(t('exhibition.confirmRemove', { name: current.name || t('exhibition.untitled'), n }))) {
+                    shared.removeExhibition(current.id)
+                    switchTab('new')
+                  }
+                }}
+              >
+                {t('common.delete')}
+              </button>
+              <span>
+                {saved && <span className="ok">{t('exhibition.saved')} </span>}
+                <button
+                  className="primary"
+                  disabled={!changed || !cleaned.name}
+                  onClick={() => {
+                    shared.updateExhibition(current.id, cleaned)
+                    setSaved(true)
+                  }}
+                >
+                  {t('common.save')}
+                </button>
+              </span>
+            </div>
+          )
+        )}
+        {!cleaned.name && <p className="muted small">{t('exhibition.needName')}</p>}
+      </div>
     </section>
   )
 }
