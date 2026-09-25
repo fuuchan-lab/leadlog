@@ -2004,3 +2004,45 @@ input[type='datetime-local'] {
   color: var(--accent-text);
   font-weight: 700;
 }
+
+/* 展示会ロゴ */
+.logo-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.logo-preview,
+.logo-empty {
+  height: 56px;
+  max-width: 200px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fff;
+  object-fit: contain;
+}
+.logo-empty {
+  width: 120px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+.logo-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dash-head {
+  align-items: flex-start;
+  gap: 10px;
+}
+.dash-logo {
+  flex: none;
+  height: 44px;
+  max-width: 132px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 8px;
+  padding: 3px 6px;
+}

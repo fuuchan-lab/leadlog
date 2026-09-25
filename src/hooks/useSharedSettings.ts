@@ -36,7 +36,7 @@ function saveCurrentId(id: string) {
 }
 
 /** 展示会で編集できる項目 */
-export type ExhibitionFields = Pick<Exhibition, 'name' | 'location' | 'startDate' | 'endDate' | 'startHour' | 'endHour'>
+export type ExhibitionFields = Pick<Exhibition, 'name' | 'location' | 'startDate' | 'endDate' | 'startHour' | 'endHour' | 'logoId'>
 
 /** 全員共通の設定（展示会・重要度・顧客の種類など）。変更は同期でドライブの settings.json に反映される */
 export function useSharedSettings() {

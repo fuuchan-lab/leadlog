@@ -40,6 +40,8 @@ export interface SheetContent {
   columns: { width: number }[]
   /** 固定する見出しの行数 */
   headerRows: number
+  /** 1行目の右上に展示会ロゴを置く列（1始まり。メモ・コメントの列） */
+  logoColumn?: number
 }
 
 // 以前の集約表の配色
@@ -144,7 +146,8 @@ export function leadsSheet(
       textColor: COLOR.title,
       textDecoration: { underline: true },
       columnSpan: Math.min(9, totalCols),
-      height: 30,
+      // 展示会ロゴ（高さ 46 ピクセル）が収まる高さ
+      height: 38,
       alignVertical: 'center',
     },
     ...Array<null>(totalCols - 1).fill(null),
@@ -228,6 +231,7 @@ export function leadsSheet(
     data: [titleRow, head1, ...(hasGroup ? [head2] : []), ...rows],
     columns: [...before, ...interests.map(() => ({ width: 7 })), ...after].map((c) => ({ width: c.width })),
     headerRows: hasGroup ? 3 : 2,
+    logoColumn: before.length + interests.length + 3,
   }
 }
 

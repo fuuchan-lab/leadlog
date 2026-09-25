@@ -8,10 +8,12 @@ interface Props {
   /** 画像が無い時に、理由の文言を出すか（ポップアップの大きい表示で使う） */
   explain?: boolean
   onClick?: () => void
+  /** 画像の説明（読み上げ用）。省略時は「読み取った画像」 */
+  alt?: string
 }
 
-/** 名刺・バッジの補正後の画像。className で一覧のサムネイルとポップアップの大きい表示を切り替える */
-export function LeadPhoto({ id, className, explain = false, onClick }: Props) {
+/** 保存した画像（名刺・バッジの補正後の画像、展示会ロゴ）。className で表示の大きさを切り替える */
+export function LeadPhoto({ id, className, explain = false, onClick, alt }: Props) {
   const { t } = useI18n()
   const [state, setState] = useState<{ id: string; url: string | null; done: boolean }>({ id, url: null, done: false })
 
@@ -32,11 +34,11 @@ export function LeadPhoto({ id, className, explain = false, onClick }: Props) {
   const current = state.id === id ? state : { url: null, done: false }
   if (current.url) {
     return onClick ? (
-      <button type="button" className="photo-button" onClick={onClick} aria-label={t('form.photo')}>
-        <img className={className} src={current.url} alt={t('form.photo')} />
+      <button type="button" className="photo-button" onClick={onClick} aria-label={alt ?? t('form.photo')}>
+        <img className={className} src={current.url} alt={alt ?? t('form.photo')} />
       </button>
     ) : (
-      <img className={className} src={current.url} alt={t('form.photo')} />
+      <img className={className} src={current.url} alt={alt ?? t('form.photo')} />
     )
   }
   if (!explain) return null

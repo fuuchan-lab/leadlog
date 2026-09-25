@@ -21,6 +21,8 @@ export interface Exhibition {
   startHour: number
   /** 閉場の時（1-24） */
   endHour: number
+  /** 展示会ロゴの画像 ID（名刺の画像と同じく、端末とドライブに保存する）。無ければ undefined */
+  logoId?: string
   createdAt: number
   updatedAt: number
   deleted?: boolean
@@ -99,6 +101,7 @@ export function parseExhibition(x: unknown): Exhibition | null {
     ...range,
     startHour,
     endHour: clampInt(e.endHour, startHour + 1, 24, Math.max(startHour + 1, 17)),
+    ...(typeof e.logoId === 'string' && e.logoId ? { logoId: e.logoId } : {}),
     createdAt: Number(e.createdAt) || 0,
     updatedAt: Number(e.updatedAt) || 0,
     ...(e.deleted ? { deleted: true } : {}),

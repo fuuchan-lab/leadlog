@@ -1,4 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { putPhoto } from '../db.ts'
+import { describeError } from '../errors.ts'
+import { shrinkLogo } from '../scan/logo.ts'
 import { belongsTo, dayCount, newExhibition, parseDate, type Exhibition } from '../exhibitions.ts'
 import type { ExhibitionFields, SharedSettingsState } from '../hooks/useSharedSettings.ts'
 import { LOCALES } from '../i18n/context.ts'
@@ -6,6 +9,7 @@ import { useI18n } from '../i18n/useI18n.ts'
 import type { Lead } from '../types.ts'
 import { DateRangePicker } from './DateRangePicker.tsx'
 import { HourRangePicker } from './HourRangePicker.tsx'
+import { LeadPhoto } from './LeadPhoto.tsx'
 
 interface Props {
   shared: SharedSettingsState
@@ -21,6 +25,7 @@ const fieldsOf = (e: Exhibition): ExhibitionFields => ({
   endDate: e.endDate,
   startHour: e.startHour,
   endHour: e.endHour,
+  logoId: e.logoId,
 })
 
 /**
@@ -33,6 +38,8 @@ export function ExhibitionCard({ shared, leads }: Props) {
   const [tab, setTab] = useState<Tab>(current ? 'edit' : 'new')
   const [draft, setDraft] = useState<ExhibitionFields>(() => fieldsOf(current ?? newExhibition('draft')))
   const [saved, setSaved] = useState(false)
+  const logoInput = useRef<HTMLInputElement>(null)
+  const [logoError, setLogoError] = useState<string | null>(null)
   /** コピーして新規作成した時の、コピー元の展示会名 */
   const [copiedFrom, setCopiedFrom] = useState<string | null>(null)
 
@@ -68,6 +75,21 @@ export function ExhibitionCard({ shared, leads }: Props) {
       startDate: fresh.startDate,
       endDate: fresh.endDate,
     })
+  }
+
+  /** アルバムから選んだロゴを縮小して保存する（同期でドライブにも上がり、ほかの端末にも表示される） */
+  const pickLogo = async (file: File | undefined) => {
+    if (!file) return
+    setLogoError(null)
+    try {
+      const logo = await shrinkLogo(file)
+      const id = `logo-${crypto.randomUUID()}`
+      await putPhoto({ id, blob: logo.blob, synced: false })
+      set({ logoId: id })
+    } catch (e) {
+      console.error('[logo]', e)
+      setLogoError(describeError(e))
+    }
   }
 
   const cleaned = { ...draft, name: draft.name.trim(), location: draft.location.trim() }
@@ -165,6 +187,43 @@ export function ExhibitionCard({ shared, leads }: Props) {
               onChange={(e) => set({ location: e.target.value })}
             />
           </label>
+          <div className="field">
+            {t('exhibition.logo')}
+            <div className="logo-field">
+              {draft.logoId ? (
+                <LeadPhoto key={draft.logoId} id={draft.logoId} className="logo-preview" alt={t('exhibition.logo')} />
+              ) : (
+                <span className="logo-empty muted small">{t('exhibition.logoNone')}</span>
+              )}
+              <span className="logo-actions">
+                <button type="button" className="secondary" onClick={() => logoInput.current?.click()}>
+                  🖼 {t(draft.logoId ? 'exhibition.logoChange' : 'exhibition.logoPick')}
+                </button>
+                {draft.logoId && (
+                  <button type="button" className="link danger" onClick={() => set({ logoId: undefined })}>
+                    {t('common.delete')}
+                  </button>
+                )}
+              </span>
+            </div>
+            <span className="muted small">{t('exhibition.logoHelp')}</span>
+            {logoError && (
+              <span className="error small">
+                {t('scan.failed')} ({logoError})
+              </span>
+            )}
+            {/* capture を付けないので、スマホではアルバム（写真ライブラリ）から選べる */}
+            <input
+              ref={logoInput}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => {
+                void pickLogo(e.target.files?.[0])
+                e.target.value = ''
+              }}
+            />
+          </div>
           <div className="field">
             {t('exhibition.dates')}
             <DateRangePicker

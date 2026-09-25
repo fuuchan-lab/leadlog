@@ -5,6 +5,7 @@ import { dayCount, exhibitionDays, type Exhibition } from '../exhibitions.ts'
 import type { Category } from '../settings.ts'
 import { buildDashboard } from '../stats.ts'
 import type { Lead } from '../types.ts'
+import { LeadPhoto } from './LeadPhoto.tsx'
 
 // グラフの部品（recharts）は大きいので別ファイルに分け、画面の他の部分を先に表示する
 const LeadChart = lazy(() => import('./LeadChart.tsx'))
@@ -47,8 +48,10 @@ function Dashboard({ leads, ex, importance }: { leads: Lead[]; ex: Exhibition; i
 
   return (
     <section className="card">
-      <div className="row">
+      <div className="row dash-head">
         <h2>{ex.name || t('dash.title')}</h2>
+        {/* 展示会ロゴ（設定の展示会でアップロードしたもの）を右上に小さく */}
+        {ex.logoId && <LeadPhoto key={ex.logoId} id={ex.logoId} className="dash-logo" alt={t('exhibition.logo')} />}
       </div>
       <p className="muted small">
         {ex.location && (
