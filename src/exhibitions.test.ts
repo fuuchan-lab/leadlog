@@ -5,6 +5,7 @@ import {
   dayCount,
   exhibitionDays,
   fromLegacy,
+  isUnassigned,
   mergeExhibitions,
   newExhibition,
   normalizeRange,
@@ -84,4 +85,13 @@ test('リードがどの展示会のものか。以前のリードは展示会�
   assert.ok(!belongsTo({ exhibitionId: 'b', exhibition: 'Expo' }, e))
   assert.ok(belongsTo({ exhibitionId: '', exhibition: 'Expo' }, e))
   assert.ok(!belongsTo({ exhibitionId: '', exhibition: '' }, { ...e, name: '' }))
+})
+
+test('削除した展示会のリード・展示会の無いリードは未分類', () => {
+  const a = ex('a', '2026-10-07', { name: 'A' })
+  const b = ex('b', '2026-11-07', { name: 'B', deleted: true })
+  assert.ok(!isUnassigned({ exhibitionId: 'a', exhibition: 'A' }, [a, b]))
+  assert.ok(isUnassigned({ exhibitionId: 'b', exhibition: 'B' }, [a, b]))
+  assert.ok(isUnassigned({ exhibitionId: '', exhibition: '' }, [a, b]))
+  assert.ok(!isUnassigned({ exhibitionId: '', exhibition: 'A' }, [a, b])) // 以前のリードは展示会名で判断
 })

@@ -49,7 +49,7 @@ export function Header({ view, onToggleSettings, auth, sync, unsyncedCount }: Pr
               {/* 設定の画面では、使い方のヘルプを開くアイコン */}
               <a
                 className="icon-button help-button"
-                href={`./help.html#${lang}`}
+                href={`./help.html?lang=${lang}`}
                 target="_blank"
                 rel="noopener"
                 aria-label={t('help.open')}

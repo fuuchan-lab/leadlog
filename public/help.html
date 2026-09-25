@@ -76,7 +76,8 @@
       }
       table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
       th, td { border: 1px solid var(--border); padding: 4px 8px; text-align: left; vertical-align: top; }
-      .en { margin-top: 40px; }
+      /* 選んだ言語のヘルプだけを表示する（下のスクリプトで切り替える） */
+      [hidden] { display: none !important; }
       .back { display: inline-block; margin-top: 8px; }
     </style>
   </head>
@@ -90,7 +91,7 @@
             <h1>リードログ ヘルプ</h1>
           </div>
         </header>
-        <p class="lang-switch">English: <a href="#en">Help in English</a></p>
+        <p class="lang-switch">English: <a href="?lang=en">Help in English</a></p>
 
         <nav class="toc" aria-label="目次">
           <h2>目次</h2>
@@ -154,6 +155,7 @@
             <li><kbd>この範囲で読み取る</kbd> を押すと、書類のように補正して文字を読み取り、氏名・会社名・部署・役職・都道府県・市区町村・電話・メールを入れます。</li>
             <li>内容を<strong>確認・修正</strong>し、重要度・顧客の種類・興味のある分野・メモ・次のアクションを選んで <kbd>リードを保存</kbd>。</li>
           </ol>
+          <p><strong>パソコン</strong>では、<kbd>📷 撮影する</kbd>でパソコンのカメラ（インカメラ）が起動します。名刺を手に持って枠に合わせ、<kbd>📷 撮影</kbd>（またはスペースキー）で撮ります。</p>
           <p>来場日時と担当者（受付）は自動で記録されます。あとで一覧の「編集」から直せます。名刺がない方は <kbd>✏️ 手入力</kbd> で登録できます。</p>
           <div class="tip">
             <strong>きれいに読み取るコツ</strong>
@@ -175,7 +177,10 @@
             <li>一覧は、はじめは<strong>開いている展示会</strong>のリードだけを表示します。<kbd>すべての展示会</kbd>で全部を表示します。</li>
             <li>検索欄で、氏名・会社・メモ・登録者などから探せます。重要度のボタンで絞り込めます。</li>
             <li>リードを押すと、全項目と名刺の画像が見られます。電話番号・メールアドレスは押すと電話・メールができます。</li>
-            <li><kbd>編集</kbd>で内容を直せます（来場日時・担当者も）。<kbd>削除</kbd>すると、ほかの端末からも消えます。</li>
+            <li><kbd>編集</kbd>で内容を直せます（来場日時・担当者・登録した展示会も）。</li>
+            <li><kbd>削除</kbd>したリードは<strong>🗑 ごみ箱</strong>に入ります。ごみ箱から<kbd>元に戻す</kbd>・<kbd>完全に削除</kbd>ができ、30日たつと自動で完全に削除されます。</li>
+            <li>一覧の下の <kbd>🗑 この一覧をすべて削除</kbd> で、表示しているリードをまとめてごみ箱に移せます（「本当にすべて削除しますか？」と確認します）。</li>
+            <li><strong>📦 未分類</strong>は、削除した展示会のリードなど、どの展示会にも入っていないリードです。一覧の下の <kbd>まとめて移す</kbd> か、各リードの<kbd>編集</kbd>で展示会に移せます。</li>
             <li>「重複の可能性」と出たリードは、どちらかを残して整理してください（自動では消しません）。</li>
           </ul>
         </section>
@@ -207,6 +212,8 @@
           <ul>
             <li>設定 →「展示会」→ <kbd>📂 既存の展示会を開く</kbd> で、過去の展示会を開けます。どれを開くかは<strong>端末ごと</strong>なので、ブースで登録中のほかの端末には影響しません。</li>
             <li><kbd>📋 コピーして新規作成</kbd> で、会場・開場時間・ロゴを引き継いで新しい展示会を作れます（リードはコピーされません）。毎年出展する展示会に便利です。</li>
+            <li>「既存の展示会を開く」の一覧の <kbd>🗑</kbd> で展示会を削除できます。リードは消えずに「📦 未分類」にまとめられ、あとで別の展示会に移せます。</li>
+            <li>設定を変えて保存しないまま <kbd>戻る</kbd> を押すと、「変更を保存しますか？」と聞かれます。</li>
           </ul>
         </section>
 
@@ -284,7 +291,7 @@
             <h1>LeadLog Help</h1>
           </div>
         </header>
-        <p class="lang-switch">日本語: <a href="#ja">日本語のヘルプ</a></p>
+        <p class="lang-switch">日本語: <a href="?lang=ja">日本語のヘルプ</a></p>
 
         <section>
           <h2>1. Getting started</h2>
@@ -309,7 +316,9 @@
           <div class="tip">
             <strong>Tips for good results:</strong> place the card on a plain surface of a different color, shoot from directly above with the card filling at least half the frame, avoid shadows and glare, and make sure it is in focus.
           </div>
+          <p>On a <strong>computer</strong>, <kbd>📷 Take photo</kbd> opens the webcam. Hold the card up in the frame and press <kbd>📷 Shoot</kbd> (or the space key).</p>
           <p>The date/time and staff are recorded automatically and can be corrected later with <kbd>Edit</kbd>.</p>
+          <p>Deleted leads go to the <strong>🗑 Trash</strong>, where you can restore them or delete them permanently (they are deleted automatically after 30 days). <kbd>Delete all in this list</kbd> asks "Really delete all?" first. Deleting a show keeps its leads under <strong>📦 Unassigned</strong>; move them to another show with <kbd>Move all</kbd> or <kbd>Edit</kbd>.</p>
         </section>
 
         <section>
@@ -351,5 +360,17 @@
         <a class="back" href="./">← Back to the app</a>
       </div>
     </main>
+    <script>
+      // アプリの言語（?lang=ja / ?lang=en）のヘルプだけを表示する。指定が無ければ、端末の言語で決める
+      ;(function () {
+        var param = new URLSearchParams(location.search).get('lang')
+        var hash = location.hash.replace('#', '')
+        var lang = param === 'en' || param === 'ja' ? param : hash === 'en' || hash === 'ja' ? hash : null
+        if (!lang) lang = (navigator.language || '').toLowerCase().indexOf('ja') === 0 ? 'ja' : 'en'
+        document.getElementById(lang === 'en' ? 'ja' : 'en').hidden = true
+        document.documentElement.lang = lang
+        document.title = lang === 'en' ? 'Help — LeadLog' : 'ヘルプ — リードログ'
+      })()
+    </script>
   </body>
 </html>

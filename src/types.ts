@@ -59,7 +59,9 @@ export interface Lead {
   /** 最終更新日時 (epoch ms)。端末間で新しい方を採用するために使う */
   updatedAt: number
   updatedBy: Author
-  /** 削除済み。他の端末へ削除を伝えるため、記録自体は残す */
+  /** ごみ箱に入れた日時（epoch ms）。ごみ箱のリードは一覧・集計・Excel に出さず、元に戻せる */
+  trashedAt?: number
+  /** 完全に削除した。他の端末へ削除を伝えるため、記録自体は残す */
   deleted?: boolean
   /** Google ドライブへ保存済みか（端末ごとの状態） */
   synced: boolean

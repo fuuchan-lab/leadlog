@@ -23,7 +23,7 @@ export default function App() {
   const [view, setView] = useState<'home' | 'settings'>(() => (location.hash === '#settings' ? 'settings' : 'home'))
   const [member, setMember] = useState(loadMember)
   const [askSave, setAskSave] = useState(false)
-  const { leads, unsyncedCount, reload, add, update, remove } = useLeads()
+  const { leads, trash, unsyncedCount, reload, add, update, moveToTrash, restore, purge, moveTo } = useLeads()
   const shared = useSharedSettings()
   const auth = useGoogleAuth()
   const sync = useSync(auth.account !== null, unsyncedCount, shared.dirty, reload, shared.refresh, lang)
@@ -109,8 +109,14 @@ export default function App() {
             allNextActions={shared.settings.nextActions}
             lists={lists}
             member={member}
+            trash={trash}
+            allExhibitions={shared.settings.exhibitions}
+            exhibitions={shared.exhibitions}
             onUpdate={update}
-            onRemove={(l) => void remove(l)}
+            onTrash={moveToTrash}
+            onRestore={restore}
+            onPurge={purge}
+            onMove={moveTo}
           />
           </div>
         </div>

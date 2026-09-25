@@ -68,7 +68,7 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn }: Prop
 
   return (
     <>
-      <a className="card help-card" href={`./help.html#${lang}`} target="_blank" rel="noopener">
+      <a className="card help-card" href={`./help.html?lang=${lang}`} target="_blank" rel="noopener">
         <span className="help-mark" aria-hidden="true">
           ?
         </span>

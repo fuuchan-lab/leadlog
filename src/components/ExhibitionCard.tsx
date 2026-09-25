@@ -161,6 +161,20 @@ export function ExhibitionCard({ shared, leads }: Props) {
                   </span>
                   <span className="exhibition-count">{t('list.count', { n: count })}</span>
                 </button>
+                {/* 展示会の削除。リードは消さず「未分類」にまとめる（あとで別の展示会に移せる） */}
+                <button
+                  type="button"
+                  className="icon-delete"
+                  aria-label={t('exhibition.deleteNamed', { name: e.name || t('exhibition.untitled') })}
+                  title={t('exhibition.deleteNamed', { name: e.name || t('exhibition.untitled') })}
+                  onClick={() => {
+                    if (confirm(t('exhibition.confirmRemove', { name: e.name || t('exhibition.untitled'), n: count }))) {
+                      shared.removeExhibition(e.id)
+                    }
+                  }}
+                >
+                  🗑
+                </button>
               </li>
             )
           })}
@@ -272,7 +286,8 @@ export function ExhibitionCard({ shared, leads }: Props) {
                 <button
                   className="link danger"
                   onClick={() => {
-                    if (confirm(t('exhibition.confirmRemove', { name: current.name || t('exhibition.untitled') }))) {
+                    const n = leads.filter((l) => belongsTo(l, current)).length
+                    if (confirm(t('exhibition.confirmRemove', { name: current.name || t('exhibition.untitled'), n }))) {
                       shared.removeExhibition(current.id)
                       switchTab('open')
                     }

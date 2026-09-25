@@ -2156,3 +2156,36 @@ input[type='datetime-local'] {
   color: #fff;
   line-height: 1.5;
 }
+
+/* 一覧の下の、まとめての操作 */
+.bulk-move {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.bulk-move select {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.bulk-delete {
+  width: 100%;
+  margin-top: 12px;
+}
+.exhibition-list li {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+.exhibition-list li .exhibition-item {
+  flex: 1;
+  min-width: 0;
+}
+.icon-delete {
+  flex: none;
+  width: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 1.1rem;
+}

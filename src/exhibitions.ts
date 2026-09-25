@@ -152,3 +152,11 @@ export function resolveCurrent(list: Exhibition[], selectedId: string | null): E
 export function belongsTo(lead: Pick<Lead, 'exhibitionId' | 'exhibition'>, ex: Exhibition): boolean {
   return lead.exhibitionId ? lead.exhibitionId === ex.id : lead.exhibition !== '' && lead.exhibition === ex.name
 }
+
+/**
+ * 未分類のリードか。どの展示会（削除していないもの）にも入っていないリード
+ * （展示会を削除した時のリードや、展示会を作る前に登録したリード）
+ */
+export function isUnassigned(lead: Pick<Lead, 'exhibitionId' | 'exhibition'>, exhibitions: Exhibition[]): boolean {
+  return !exhibitions.some((e) => !e.deleted && belongsTo(lead, e))
+}
