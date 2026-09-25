@@ -22,13 +22,16 @@ let ready = false
 function getWorker(): Promise<Worker> {
   workerPromise ??= (async () => {
     // 大きいライブラリなので、使う時だけ読み込む
-    const { createWorker } = await import('tesseract.js')
+    const { createWorker, PSM } = await import('tesseract.js')
     const worker = await createWorker(['jpn', 'eng'], 1, {
       logger: (m) => {
         const phase = m.status === 'recognizing text' ? 'recognizing' : 'loading'
         listener?.({ phase, progress: typeof m.progress === 'number' ? m.progress : 0 })
       },
     })
+    // 文字の大きさがまちまちな1段の文章として読む（PSM 4）。名刺では、自動（PSM 3）より
+    // 大きな氏名や会社名を読み落としにくい（合成した名刺30枚で、氏名 16/30 → 29/30）
+    await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_COLUMN })
     ready = true
     return worker
   })().catch((e: unknown) => {

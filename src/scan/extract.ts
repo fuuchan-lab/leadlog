@@ -67,10 +67,28 @@ export function normalizeLine(text: string): string {
 
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/
 
+/**
+ * OCR がよく間違える形を直す。
+ * 「.co.jp」→「cojp」、「.com」→「 com」「com」（点が消える）、「@」→「＠」「®」など
+ */
+export function repairEmailText(raw: string): string {
+  let s = raw.replace(/[＠®]/g, '@').replace(/\s*@\s*/g, '@')
+  // ドメインの中の空白を点にする（「evatecnet com」→「evatecnet.com」）
+  s = s.replace(/(@[A-Za-z0-9.-]+?)\s+(com|net|org|jp|co\.jp|ne\.jp|or\.jp|ac\.jp|biz|info)\b/gi, '$1.$2')
+  // 「cojp」「nejp」など → 「.co.jp」
+  s = s.replace(/(@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*?)\.?(co|ne|or|ac|go|ed|gr|lg)\.?jp\b/gi, '$1.$2.jp')
+  // 点が1つも無いドメインが com / net / org / jp で終わっていれば、その前に点を入れる
+  s = s.replace(/(@[A-Za-z0-9-]{2,}?)(com|net|org|jp)\b(?![.-])/gi, (all, head: string, tld: string) =>
+    head.includes('.') ? all : `${head}.${tld}`,
+  )
+  // 点の前後の空白を詰める
+  return s.replace(/\s*\.\s*(?=[A-Za-z]{2,}\b)/g, '.')
+}
+
 export function findEmail(lines: string[]): string {
   for (const raw of lines) {
     // 「@」の前後の空白や、「E-mail:」などの見出しを外してから探す
-    const s = raw.replace(/\s*@\s*/g, '@').replace(/\s*\.\s*(?=[A-Za-z]{2,}\b)/g, '.')
+    const s = repairEmailText(raw)
     const m = s.match(EMAIL_RE)
     if (m) return m[0].replace(/^(?:e-?mail|mail)[:：]?/i, '').toLowerCase()
   }
@@ -179,14 +197,67 @@ const TITLE_WORDS = [
 const DEPT_RE =
   /[^\s]*(?:事業本部|本部|事業部|部|課|室|グループ|センター|研究所|支店|営業所|工場|チーム|Division|Dept\.?|Department|Section|Group|Team|Unit|Office)(?![a-z])/i
 
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+/** 語の文字の間に空白があってもよい正規表現（OCR は「課長 代理」のように空白を入れることがある） */
+const looseRe = (w: string) =>
+  new RegExp(
+    w
+      .replace(/\s/g, '')
+      .split('')
+      .map(escapeRe)
+      .join('\\s*'),
+    'i',
+  )
+
 function findTitle(line: string): string {
-  const found = TITLE_WORDS.filter((w) => new RegExp(w.replace(/\s/g, '\\s?'), 'i').test(line))
+  const collapsed = line.replace(/\s+/g, '').toLowerCase()
+  const found = TITLE_WORDS.filter((w) => collapsed.includes(w.replace(/\s/g, '').toLowerCase()))
   if (found.length === 0) return ''
   // 長い語を優先（「代表取締役」と「取締役」が両方当たる場合など）
   return found.sort((a, b) => b.length - a.length)[0]
 }
 
+/** 行から役職を取り除く */
+const removeTitle = (line: string, title: string) => line.replace(looseRe(title), ' ').replace(/\s{2,}/g, ' ').trim()
+
+/** 行の前後に付いた、OCR のごみ（線・かっこ・記号など）を取り除く */
+export function trimJunk(s: string): string {
+  return s
+    .replace(/^[\s\-‐ー_|｜/\\[\]【】「」『』()（）<>《》〈〉.,。、・:：;'"`~*※〇○●◯]+/u, '')
+    .replace(/[\s\-‐ー_|｜/\\[\]【】「」『』()（）<>《》〈〉.,。、・:：;'"`~*※〇○●◯]+$/u, '')
+    .trim()
+}
+
+/** よくある日本の姓（名前らしさの手がかり） */
+const SURNAMES = new Set(
+  (
+    '佐藤 鈴木 高橋 田中 伊藤 渡辺 渡邊 山本 中村 小林 加藤 吉田 山田 佐々木 山口 松本 井上 木村 林 斎藤 斉藤 清水 山崎 森 池田 ' +
+    '橋本 阿部 石川 山下 中島 石井 小川 前田 岡田 長谷川 藤田 後藤 近藤 村上 遠藤 青木 坂本 福田 太田 西村 藤井 金子 岡本 ' +
+    '藤原 中野 三浦 原田 中川 松田 竹内 小野 田村 中山 和田 石田 森田 上田 原 内田 柴田 酒井 宮崎 横山 高木 安藤 宮本 大野 ' +
+    '小島 谷口 今井 工藤 高田 増田 丸山 杉山 村田 大塚 新井 小山 平野 藤本 河野 上野 野口 武田 松井 千葉 岩崎 菅原 木下 久保 ' +
+    '佐野 野村 松尾 市川 菊地 杉本 古川 大西 島田 水野 桜井 高野 渡部 吉川 山内 西田 飯田 菊池 西川 小松 北村 安田 五十嵐 ' +
+    '川口 平田 関 中田 久保田 服部 東 岩田 土屋 川崎 福島 本田 辻 樋口 秋山 永井 中西 吉村 川上 大橋 石原 松岡 浅野 荒木 ' +
+    '大久保 熊谷 小池 内藤 桑原 松下 野田 早川 大川 片山 須藤 平井 堀 星 岡崎 石塚 小田 奥村 北川 松浦 菅野 田辺 岩本 大島 ' +
+    '伊東 西山 荒井 本間 富田 川村 堀内 宮田 小西 植田 松村 黒田 上原 大石 竹田 竹中 今村 森本 堤 半田 望月 河合 小倉 ' +
+    '中井 松原 新田 足立 滝沢 岡 高山 奥田 松永 今野 大谷 宮下 中尾 西尾 村井 三宅 片岡 長田 金井 富永 岸 土井 八木 堀田 ' +
+    '菅 野崎 永田 久野 丹羽 栗原 平川 新谷 神田 吉野 吉岡 若林 大山 岩井 下田 森下 稲垣 萩原 白石 北野 坂口 宇野 岩瀬 高島'
+  ).split(' '),
+)
+
+/** 氏名の先頭が、よくある姓か */
+function startsWithSurname(name: string): boolean {
+  const s = name.replace(/\s/g, '')
+  for (let len = 3; len >= 1; len--) if (s.length > len && SURNAMES.has(s.slice(0, len))) return true
+  return false
+}
+
+const KANA_NAME_RE = /^[\p{Script=Hiragana}\p{Script=Katakana}ー]{2,6}\s?[\p{Script=Hiragana}\p{Script=Katakana}ー]{1,6}$/u
+const EN_NAME_CAPS_RE = /^[A-Z][A-Z'’-]+(?:\s[A-Z][A-Za-z.'’-]*){1,2}$/
+
 const JA_NAME_RE = /^[\p{Script=Han}々]{1,4}\s?[\p{Script=Han}々\p{Script=Hiragana}\p{Script=Katakana}]{1,5}$/u
+/** 漢字の氏名の後ろにローマ字が続く行（「中村 直樹 Naoki Nakamura」） */
+const JA_WITH_ROMAJI_RE = /^([\p{Script=Han}々]{1,4}\s?[\p{Script=Han}々\p{Script=Hiragana}\p{Script=Katakana}]{1,5})\s+[A-Za-z][A-Za-z .'’-]*$/u
 const EN_NAME_RE = /^[A-Z][a-zA-Z'’-]+(?:\s[A-Z][a-zA-Z.'’-]*){1,2}$/
 
 /** 行が住所・連絡先などの、名前ではない情報か */
@@ -204,6 +275,14 @@ function stripNameLabel(s: string): string {
   return s.replace(/^(?:氏名|名前|お名前|name)[:：]?\s*/i, '').trim()
 }
 
+/** 会社名の行を整える。前後のごみと、「株式会社」などの後ろの短いごみ（「株式会社の 》」）を取り除く */
+function cleanCompany(line: string): string {
+  let s = trimJunk(line).replace(/\s*(?:本社|本店)$/, '')
+  const m = s.match(/^(.*?(?:株式会社|有限会社|合同会社|\(株\)|（株）|㈱))\s*(.{1,2})$/u)
+  if (m && !/[A-Za-z]{2}/.test(m[2])) s = m[1]
+  return s
+}
+
 export function extractFields(input: OcrLine[]): Extracted {
   const lines = input.map((l) => ({ text: normalizeLine(l.text), height: l.height })).filter((l) => l.text.length > 0)
   const texts = lines.map((l) => l.text)
@@ -213,7 +292,7 @@ export function extractFields(input: OcrLine[]): Extracted {
   const { prefecture, city } = findAddress(texts)
 
   const companyLine = lines.find((l) => COMPANY_RE.test(l.text) && !isContactLine(l.text.replace(COMPANY_RE, '')))
-  const company = companyLine ? companyLine.text.replace(/\s*(?:本社|本店)$/, '') : ''
+  const company = companyLine ? cleanCompany(companyLine.text) : ''
 
   let title = ''
   let department = ''
@@ -222,7 +301,7 @@ export function extractFields(input: OcrLine[]): Extracted {
     const t = findTitle(l.text)
     if (t && !title) title = t
     if (!department && DEPT_RE.test(l.text)) {
-      const rest = t ? l.text.replace(new RegExp(t.replace(/\s/g, '\\s?'), 'i'), '').trim() : l.text
+      const rest = t ? removeTitle(l.text, t) : l.text
       // 役職だけの行（「部長」など）は部署にしない
       if (rest && !TITLE_WORDS.includes(rest)) department = rest.replace(/[\s/／|｜・]+$/, '')
     }
@@ -233,15 +312,26 @@ export function extractFields(input: OcrLine[]): Extracted {
   const maxHeight = Math.max(1, ...lines.map((l) => l.height))
   for (const l of lines) {
     if (l === companyLine || isContactLine(l.text)) continue
-    let text = stripNameLabel(l.text)
+    let text = trimJunk(stripNameLabel(l.text))
     const t = findTitle(text)
-    if (t) text = text.replace(new RegExp(t.replace(/\s/g, '\\s?'), 'i'), '').trim()
+    if (t) text = trimJunk(removeTitle(text, t))
+    // 漢字の氏名の後ろのローマ字は外す（ローマ字があれば、氏名である手がかりにもなる）
+    const withRomaji = text.match(JA_WITH_ROMAJI_RE)
+    if (withRomaji) text = withRomaji[1]
+    // 漢字の氏名の後ろの、1〜2文字の OCR のごみ（「中村直樹 s。」）を外す
+    text = text.replace(/^([\p{Script=Han}々].*?[\p{Script=Han}々\p{Script=Hiragana}])\s+[A-Za-z0-9。、.,]{1,2}$/u, '$1')
     if (!text || text === department || DEPT_RE.test(text)) continue
     let score = (l.height / maxHeight) * 3
-    if (JA_NAME_RE.test(text)) score += 4
-    else if (EN_NAME_RE.test(text)) score += 3
-    else if (text.length > 16) score -= 3
-    else score -= 1
+    if (JA_NAME_RE.test(text)) {
+      score += 4
+      if (startsWithSurname(text)) score += 2
+      if (withRomaji) score += 1
+      // 漢字1文字だけ・役職の一部のような行は名前らしくない
+      if (text.replace(/\s/g, '').length < 2) score -= 3
+    } else if (EN_NAME_RE.test(text) || EN_NAME_CAPS_RE.test(text)) score += 3
+    else if (KANA_NAME_RE.test(text)) score += 0.5
+    // 名前らしい形（漢字の氏名・英語の氏名・かなの氏名）でない行は、名前にしない（OCR のごみを名前にしないため）
+    else continue
     if (!best || score > best.score) best = { text, score }
   }
   const name = best && best.score > 1 ? best.text : ''

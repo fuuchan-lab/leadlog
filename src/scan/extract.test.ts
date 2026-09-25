@@ -71,3 +71,53 @@ test('英語の名刺から各項目を取り出す', () => {
   assert.equal(result.phone, '03-5555-1234')
   assert.equal(result.email, 'john.smith@evatecnet.com')
 })
+
+test('OCR がよく間違えるメールアドレスの形を直す', () => {
+  assert.equal(findEmail(['E-mail taro.yamada@sample-kogyo.cojp']), 'taro.yamada@sample-kogyo.co.jp')
+  assert.equal(findEmail(['john.smith@evatecnet com・www.evatecnet com']), 'john.smith@evatecnet.com')
+  assert.equal(findEmail(['info＠example.co.jp']), 'info@example.co.jp')
+  assert.equal(findEmail(['naoki@nakamura-techcom']), 'naoki@nakamura-tech.com')
+  assert.equal(findEmail(['sales@abc.co.jp']), 'sales@abc.co.jp')
+})
+
+test('氏名の後ろにローマ字が続く行、前後のごみ、空白の入った役職', () => {
+  const r = extractFields(
+    lines([
+      ['NAKAMURA TECH 株 式 会 社 の 》', 24],
+      ['代表 取締 役 社長', 22],
+      ['中 村 直樹 Naoki Nakamura', 20],
+      ['TEL 045-222-3333 / naoki@nakamura-tech.com', 17],
+    ]),
+  )
+  assert.equal(r.name, '中村直樹') // OCR が1文字ずつ区切った空白は詰める
+  assert.equal(r.company, 'NAKAMURA TECH 株式会社')
+  assert.equal(r.title, '代表取締役社長')
+
+  const r2 = extractFields(
+    lines([
+      ['日 本 マテ リア ル 株 式 会 社', 21],
+      ['課長 代理', 20],
+      ['ーー', 20],
+      ['| [| 品', 20],
+      ['TEL 052-123-4567', 24],
+    ]),
+  )
+  // 「課長 代理」は役職。OCR のごみ（「品」など）は名前にしない
+  assert.equal(r2.title, '課長代理')
+  assert.equal(r2.name, '')
+
+  const r3 = extractFields(lines([['ーー John Smith', 40], ['_ Evatec AG', 30], ['Sales Manager', 20]]))
+  assert.equal(r3.name, 'John Smith')
+  assert.equal(r3.company, 'Evatec AG')
+})
+
+test('よくある姓で始まる行を、名前として優先する', () => {
+  const r = extractFields(
+    lines([
+      ['株式会社サンプル', 30],
+      ['技術 開発', 40], // 大きいが名前ではない
+      ['佐藤 花子', 34],
+    ]),
+  )
+  assert.equal(r.name, '佐藤 花子')
+})
