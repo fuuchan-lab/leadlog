@@ -1,0 +1,1820 @@
+:root {
+  --bg: #f4f6fb;
+  --card: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --accent: #1d4ed8;
+  --accent-text: #ffffff;
+  --danger: #b91c1c;
+  --caution-bg: #fef9c3;
+  --caution-text: #854d0e;
+  --warning-bg: #fee2e2;
+  --warning-text: #991b1b;
+  --ok-bg: #dcfce7;
+  --ok-text: #166534;
+  --info-bg: #dbeafe;
+  --info-text: #1e3a8a;
+  --gear-light: #c7d2fe;
+  --gear-mid: #4f7cf5;
+  --gear-dark: #1e3a8a;
+  --gear-hole-light: #4b5563;
+  --gear-hole-dark: #111827;
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+}
+
+/* 配色は、設定で「ライト」「ダーク」を選ぶとその配色に固定（data-theme）。「自動」は端末の設定に従う。
+   ダークの色は2か所に同じものを書く必要があるので、変えるときは両方そろえる */
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0f172a;
+  --card: #1e293b;
+  --text: #e5e7eb;
+  --muted: #94a3b8;
+  --border: #334155;
+  --accent: #60a5fa;
+  --accent-text: #0b1a3a;
+  --danger: #f87171;
+  --caution-bg: #422006;
+  --caution-text: #fde68a;
+  --warning-bg: #450a0a;
+  --warning-text: #fecaca;
+  --ok-bg: #052e16;
+  --ok-text: #bbf7d0;
+  --info-bg: #172554;
+  --info-text: #bfdbfe;
+  --gear-light: #e0e7ff;
+  --gear-mid: #60a5fa;
+  --gear-dark: #1d4ed8;
+  --gear-hole-light: #94a3b8;
+  --gear-hole-dark: #0b1220;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --text: #e5e7eb;
+    --muted: #94a3b8;
+    --border: #334155;
+    --accent: #60a5fa;
+    --accent-text: #0b1a3a;
+    --danger: #f87171;
+    --caution-bg: #422006;
+    --caution-text: #fde68a;
+    --warning-bg: #450a0a;
+    --warning-text: #fecaca;
+    --ok-bg: #052e16;
+    --ok-text: #bbf7d0;
+    --info-bg: #172554;
+    --info-text: #bfdbfe;
+    --gear-light: #e0e7ff;
+    --gear-mid: #60a5fa;
+    --gear-dark: #1d4ed8;
+    --gear-hole-light: #94a3b8;
+    --gear-hole-dark: #0b1220;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* ノッチ・ホームバーを避けつつ、左右は最低16pxの余白を確保 */
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: calc(12px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    calc(32px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+h1 {
+  min-width: 0;
+  white-space: nowrap;
+  margin: 2px 0 0;
+  font-size: clamp(1.45rem, 6vw, 2.2rem);
+  line-height: 1.1;
+}
+
+h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.big {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.unit {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+p {
+  margin: 0;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.small {
+  font-size: 0.75rem;
+}
+
+.error {
+  color: var(--danger);
+  font-size: 0.875rem;
+}
+
+.ok {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.875rem;
+}
+
+.banner {
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+
+.banner-none {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+}
+
+.banner-caution {
+  background: var(--caution-bg);
+  color: var(--caution-text);
+}
+
+.banner-warning {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  font-weight: 600;
+}
+
+/* iOS Safari は16px未満の入力欄にフォーカスすると画面が拡大されるため16pxにする */
+input[type='text'],
+input[type='number'],
+input[type='datetime-local'],
+select {
+  width: 100%;
+  min-height: 44px;
+  font: inherit;
+  font-size: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  border: 0;
+  border-radius: 10px;
+  min-height: 48px;
+  padding: 12px;
+  font-weight: 600;
+}
+
+button.primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+button.link {
+  background: none;
+  border: 0;
+  color: var(--accent);
+  min-height: 44px;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+button.link.danger {
+  color: var(--danger);
+}
+
+button.link:disabled {
+  color: var(--muted);
+}
+
+.levels {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.level {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: 8px 2px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.level.selected {
+  border-color: var(--c);
+  background: color-mix(in srgb, var(--c) 30%, var(--card));
+}
+
+.level-num {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.level-label {
+  font-size: 0.6rem;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--muted);
+}
+
+.file-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.preview {
+  max-width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: 10px;
+  align-self: flex-start;
+}
+
+.seg {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.seg button {
+  background: none;
+  border: 0;
+  min-height: 36px;
+  padding: 4px 10px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.seg button.on {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.chart {
+  width: 100%;
+  min-width: 0;
+  /* 縦のスクロールはページに任せ、横のドラッグとピンチはグラフで処理する */
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.history li {
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+
+.history li:first-child {
+  border-top: 0;
+}
+
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.note {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.thumb {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-top: 6px;
+}
+
+/* 頭痛レベルのスライダー */
+.slider {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slider-value {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.slider-num {
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--c);
+}
+
+.slider-label {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.slider input[type='range'] {
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  accent-color: var(--c);
+  touch-action: pan-y;
+}
+
+.slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* 履歴の編集 */
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.field input {
+  color: var(--text);
+}
+
+/* 薬の選択・設定 */
+.two {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+select {
+  appearance: auto;
+}
+
+.med-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 薬の一覧の右側（並べ替え・編集・削除）。狭い画面でも押しやすい大きさを保つ */
+.med-actions {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+button.link.move-button {
+  padding: 4px 6px;
+  min-width: 36px;
+}
+
+.legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+/* ヘッダー（アプリ名・設定・Googleログイン） */
+.topbar {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px 0;
+}
+
+.topbar > div:first-child {
+  min-width: 0;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.icon-button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.icon-button:hover,
+.icon-button:focus-visible {
+  color: var(--accent);
+}
+
+.google-button {
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 12px 8px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.google-button:disabled {
+  opacity: 0.7;
+}
+
+/* 接続中は、「Google」と「接続中」を2行の小さい文字にする */
+.google-text.connected {
+  white-space: pre-line;
+  font-size: 0.66rem;
+  line-height: 1.2;
+}
+
+.google-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.google-mark {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: center / cover;
+}
+
+/* 公式ロゴは、暗い配色でも見えるように白い丸の上に置く */
+.google-logo {
+  width: 100%;
+  height: 100%;
+  padding: 3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+/* アカウントのダイアログ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+button.secondary,
+button.danger-btn {
+  min-height: 48px;
+  border-radius: 10px;
+  padding: 10px;
+  background: transparent;
+  font-weight: 600;
+}
+
+button.secondary {
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+button.danger-btn {
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+
+.banner {
+  cursor: pointer;
+}
+
+/* 現在の気圧・今後の変化（左）と、天気・気温・湿度（右） */
+.now {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+/* 現在の気圧の数字。カードの主役なので大きく */
+.big-pressure {
+  font-size: clamp(2.6rem, 11vw, 3.4rem);
+  line-height: 1.1;
+}
+
+.weather {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  /* 背景色は不快指数に応じて画面側で指定する。濃い色にしてあるので文字は白。影を付けて黄色い背景でも読みやすくする */
+  background: hsl(125 60% 27%);
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  transition: background-color 0.5s ease;
+}
+
+.weather-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.weather-icon {
+  font-size: 2.6rem;
+  line-height: 1.1;
+}
+
+.weather-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.weather-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* 小さめのスマホ（幅380px未満）: 頭痛ボタンを3列×2段にして文字を読みやすくする */
+@media (max-width: 379px) {
+  .app {
+    gap: 12px;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  .levels {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .big {
+    font-size: 1.75rem;
+  }
+
+  .row {
+    flex-wrap: wrap;
+  }
+}
+
+/* 横向き・タブレット以上では余白を広げる */
+@media (min-width: 600px) {
+  .app {
+    padding-top: 32px;
+  }
+}
+
+/* 付箋メモ */
+textarea.sticky {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 4px 4px 16px 4px;
+  background: #fef08a;
+  color: #422006;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+textarea.sticky::placeholder {
+  color: #a16207;
+}
+
+.sticky-note {
+  margin: 4px 0 0;
+  padding: 10px 12px;
+  border-radius: 4px 4px 16px 4px;
+  background: #fef08a;
+  color: #422006;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* 設定画面から戻るボタン */
+.back-button {
+  min-height: 44px;
+  padding: 8px 18px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.back-button:hover,
+.back-button:focus-visible {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+/* 言語の選択（設定画面） */
+.chart-loading {
+  /* グラフの読み込み中に、下の画面が動かないよう場所を確保する */
+  min-height: 320px;
+}
+
+.privacy-link {
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.privacy-link a {
+  color: var(--muted);
+}
+
+.theme-row {
+  margin-top: 12px;
+}
+
+.language-select {
+  width: auto;
+  min-height: 44px;
+  font: inherit;
+  font-size: 16px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* 記録の詳細ポップアップの写真 */
+.popup-photo {
+  width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+/* 歯車アイコンの立体感（影）と、押した時の回転 */
+.gear {
+  display: block;
+  margin: 0 auto;
+  filter: drop-shadow(0 2px 1.5px rgba(0, 0, 0, 0.4));
+  transition: transform 0.4s ease;
+}
+
+.icon-button:hover .gear,
+.icon-button:focus-visible .gear {
+  transform: rotate(45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gear {
+    transition: none;
+  }
+}
+
+/* 気圧の小さな推移グラフ（6時間前〜6時間後） */
+.spark {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.spark-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.spark-future {
+  stroke-dasharray: 3 3;
+  opacity: 0.85;
+}
+
+.spark-now-line {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+  opacity: 0.6;
+}
+
+.spark-dot {
+  fill: var(--card);
+  stroke: var(--accent);
+  stroke-width: 1.6;
+}
+
+.spark-dot-now {
+  fill: var(--accent);
+  stroke: var(--card);
+  stroke-width: 1.5;
+}
+
+.spark-label {
+  fill: var(--muted);
+  font-size: 9px;
+}
+
+/* 推移グラフの数値（2時間ごと）。線と重なっても読めるよう、背景色の縁取りを付ける */
+.spark-value {
+  fill: var(--text);
+  font-size: 9.5px;
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: var(--card);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+/* タイトルの左のアプリアイコン。文字と同じくらいの大きさ */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* アプリのロゴ。アプリ説明と名前の2行のかたまりの左に置く */
+.brand-logo {
+  flex: none;
+  width: 56px;
+  height: 56px;
+}
+
+.brand-text {
+  min-width: 0;
+}
+
+/* 見出しが長くて折り返した時も、右側のボタン（更新など）は右寄せのまま */
+.row > .link {
+  margin-left: auto;
+}
+
+/* グラフの拡大・縮小ボタン */
+.zoom {
+  display: flex;
+  gap: 6px;
+}
+
+.zoom button {
+  min-width: 44px;
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.zoom button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* 表示範囲のボタン（全体・1日・3日…）は、狭い画面で折り返せるように */
+.seg {
+  flex-wrap: wrap;
+  align-self: flex-start;
+}
+
+/* 薬の色の選択。4つ×2段の小さめの丸 */
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(4, 26px);
+  gap: 8px;
+}
+
+.swatch-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 2px solid var(--card);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+.swatch-btn[aria-checked='true'] {
+  box-shadow: 0 0 0 2px var(--text);
+}
+
+/* 薬の名前の下の行: 左に服薬間隔、右に色の選択。狭い画面では色が下に回り込む */
+.interval-color {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+
+.interval-color > .field:first-child {
+  flex: 1 1 11em;
+}
+
+/* 気圧が上がりつつある時のお知らせ */
+.banner-info {
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+
+/* アドバイスのポップアップ。長いので、画面より高くなったらポップアップの中でスクロールする */
+.modal-card {
+  max-height: 88vh;
+  max-height: 88dvh;
+  overflow-y: auto;
+}
+
+.advice-section h3 {
+  margin: 4px 0 6px;
+  font-size: 1rem;
+}
+
+.advice-section p {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+}
+
+.advice-section ul {
+  margin: 0;
+  padding-left: 1.2em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+/* ポップアップの中の要素は、内容が長くなっても縮めない（縮むとタブなどが潰れて見えなくなる） */
+.modal-card > * {
+  flex-shrink: 0;
+}
+
+/* 記録するカード（今の頭痛・服薬）の見出しは、他のカードより大きく */
+.form-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* 気圧カードの下段: 左に「最後に薬を飲んでから」、右に気圧の変化のお知らせと「アドバイス」ボタン */
+.pressure-bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.pressure-bottom-single {
+  grid-template-columns: 1fr;
+}
+
+.med-status {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 10px 9px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.med-status-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.med-status-time {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.pressure-advice {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* 気圧の変化のお知らせは大きめに、「アドバイス」ボタンは小さめに */
+.pressure-advice .banner {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  /* 「…ありま／す。」のように、最後の1文字だけ次の行に残らないよう、行を均等に折り返す */
+  text-wrap: balance;
+  /* 日本語は、語の途中ではなく文節の区切りで折り返す（対応していないブラウザでは無視される） */
+  word-break: auto-phrase;
+}
+
+.pressure-advice .secondary {
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  border-radius: 8px;
+}
+
+/* 幅がとても狭いスマホでは、左右に並べず上下に並べる */
+@media (max-width: 389px) {
+  .pressure-bottom {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 薬名などは、途中で折り返さず、1語のまま次の行へ送る */
+.nowrap {
+  white-space: nowrap;
+}
+
+/* 服薬の記録がない時のメッセージ */
+.med-status-empty {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+/* 服薬間隔の入力（数字と単位を1行に） */
+.interval-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.interval-row input {
+  width: 7em;
+}
+
+/* 薬の名前の左のカプセルアイコン（選んだ色がすぐ反映される） */
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.name-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 「最後に服薬してから」: 薬名と錠数は白の太字、次の服薬までの時間は控えめに */
+.med-status-drug {
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.med-status-next {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  /* 「次の服薬が可能になるまで／あと」は、「最後に服薬してから」と同じ文字色。時間だけ太字で目立たせる */
+  color: var(--muted);
+}
+
+.med-status-next strong {
+  color: var(--text);
+}
+
+/* 気圧の推移グラフの「今」の丸は、ゆっくり点滅させて、いまの位置が分かるようにする */
+@keyframes spark-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.spark-dot-now {
+  animation: spark-blink 2.4s ease-in-out infinite;
+}
+
+/* 動きを減らす設定の端末では、点滅させない */
+@media (prefers-reduced-motion: reduce) {
+  .spark-dot-now {
+    animation: none;
+  }
+}
+
+/*
+ * 気圧が下がる時のお知らせ（気圧カードの中だけ）は、後ろの背景色だけをゆっくり点滅させて気づきやすくする。
+ * 文字は点滅させない（透明度は変えず、背景色だけを、カードの色に近い色との間で行き来させる）。
+ */
+@keyframes banner-blink {
+  0%,
+  100% {
+    background-color: var(--blink-from);
+  }
+  50% {
+    background-color: color-mix(in srgb, var(--blink-from) 22%, var(--card));
+  }
+}
+
+.pressure-advice .banner-caution {
+  --blink-from: var(--caution-bg);
+  animation: banner-blink 2.8s ease-in-out infinite;
+}
+
+.pressure-advice .banner-warning {
+  --blink-from: var(--warning-bg);
+  animation: banner-blink 2.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pressure-advice .banner-caution,
+  .pressure-advice .banner-warning {
+    animation: none;
+  }
+}
+
+/* スマホ（幅430px以下）でも、気圧の右に天気・気温・湿度のボックスを並べる。収まるよう、文字とボックスを小さめにする */
+@media (max-width: 430px) {
+  .now {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .big-pressure {
+    min-width: 0;
+    font-size: clamp(2.1rem, 9.5vw, 3.4rem);
+  }
+
+  .big-pressure .unit {
+    font-size: 0.85rem;
+  }
+
+  .weather {
+    flex: none;
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .weather-icon {
+    font-size: 2rem;
+  }
+
+  /* 「くもり時々晴れ」のような長い天気名は、2行に折り返して幅を取らない */
+  .weather-label {
+    max-width: 5.5em;
+    font-size: 0.7rem;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .weather-meta {
+    font-size: 0.8rem;
+  }
+}
+
+/* 幅がとても狭い画面だけは、気圧の下に回り込ませる */
+@media (max-width: 339px) {
+  .now {
+    flex-wrap: wrap;
+  }
+}
+
+/* 位置情報が取れない時の警告（設定方法の案内と再試行のボタン付き） */
+.location-warning {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.location-warning-text {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.location-warning .row {
+  justify-content: stretch;
+  flex-wrap: wrap;
+}
+
+.location-warning .row button {
+  flex: 1 1 8em;
+  min-height: 44px;
+}
+
+.location-warning .muted {
+  color: inherit;
+  opacity: 0.8;
+}
+
+/* 位置情報を許可する手順 */
+.loc-platform {
+  margin: 4px 0 0;
+  font-size: 1rem;
+}
+
+.loc-steps {
+  margin: 0;
+  padding-left: 1.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+/* ---- リードログで追加 ---- */
+
+/* オンラインで Google につながっている間: 縁を緑にして、1秒周期でふわっと光らせる */
+.google-button.google-button-live {
+  border-color: #22c55e;
+  animation: live-glow 1s ease-in-out infinite;
+}
+
+@keyframes live-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 6px 16px rgba(0, 0, 0, 0.12),
+      0 0 0 0 rgba(34, 197, 94, 0.15);
+  }
+  50% {
+    box-shadow:
+      0 6px 16px rgba(0, 0, 0, 0.12),
+      0 0 10px 3px rgba(34, 197, 94, 0.75);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* 動きを減らす設定の端末では、点滅させず緑の縁だけにする */
+  .google-button.google-button-live {
+    animation: none;
+    box-shadow:
+      0 6px 16px rgba(0, 0, 0, 0.12),
+      0 0 0 2px rgba(34, 197, 94, 0.5);
+  }
+}
+
+.sync-badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #f97316;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 重要度・顧客の種類のボタン */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.chip.on {
+  color: #fff;
+  font-weight: 700;
+}
+.chip.on-neutral {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--card);
+}
+.chip-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+.tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.5;
+  margin-right: 6px;
+  white-space: nowrap;
+}
+.tag-warn {
+  background: var(--caution-bg);
+  color: var(--caution-text);
+}
+.tag-muted {
+  background: var(--border);
+  color: var(--muted);
+}
+
+/* ダッシュボード */
+.kpis {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 8px 0 4px;
+}
+.kpi {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+.kpi-today {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+}
+.kpi-off {
+  background: var(--border);
+  color: var(--muted);
+}
+.kpi-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.kpi .big {
+  margin: 0;
+  line-height: 1.1;
+}
+.chart-title {
+  margin: 14px 0 0;
+  font-size: 0.95rem;
+}
+.lead-chart {
+  margin: 4px -6px 0;
+}
+.breakdown {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin-top: 8px;
+}
+.breakdown-title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.stat-chips {
+  list-style: none;
+  padding: 0;
+  margin: 2px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 0.9rem;
+}
+.stat-chips li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* 読み取り */
+.capture-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.capture-buttons button {
+  flex: 1 1 auto;
+}
+.progress progress {
+  width: 100%;
+}
+.scan-card {
+  max-width: 640px;
+}
+.scan-stage {
+  position: relative;
+  line-height: 0;
+  touch-action: none;
+  user-select: none;
+}
+.scan-image {
+  width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.scan-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.scan-shade {
+  fill: rgba(15, 23, 42, 0.45);
+}
+.scan-outline {
+  fill: none;
+  stroke: #fbbf24;
+}
+.scan-handle {
+  fill: rgba(251, 191, 36, 0.35);
+  stroke: #fbbf24;
+  cursor: grab;
+}
+.scan-actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.scan-result {
+  width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+.ocr-text summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.ocr-text pre {
+  white-space: pre-wrap;
+  font-size: 0.8rem;
+  background: var(--bg);
+  padding: 8px;
+  border-radius: 8px;
+  margin: 4px 0 0;
+}
+
+/* 入力欄 */
+.lead-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 10px;
+}
+.form-grid .field,
+.form-grid input,
+.form-grid select {
+  min-width: 0;
+}
+@media (max-width: 379px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+input[type='text'],
+input[type='email'],
+input[type='tel'],
+input[type='search'],
+input[type='date'] {
+  font: inherit;
+  font-size: 16px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  width: 100%;
+}
+.hours-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.radio {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: normal;
+}
+.member-card {
+  border: 2px solid var(--accent);
+}
+
+/* 一覧 */
+.search {
+  margin: 4px 0 8px;
+}
+.filter-chips {
+  margin-bottom: 4px;
+}
+.lead-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.lead-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.lead-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.lead-tags:empty {
+  display: none;
+}
+.photo-button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  flex: none;
+}
+.detail {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  margin: 0;
+}
+.detail div {
+  display: grid;
+  grid-template-columns: 7.5em 1fr;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+.detail dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.detail dd {
+  margin: 0;
+}
+
+/* ---- 画面の大きさ別のレイアウト ----
+   スマホ（Android・iPhone の縦長）: 1列。上の .app の max-width: 560px のまま
+   PC などの横長の大きい画面（幅 1024px 以上）: ホームは2列（左: ダッシュボード・読み取り / 右: 一覧）、設定も2列 */
+.home-grid,
+.home-col,
+.settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .app {
+    max-width: 1320px;
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+  .home-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    align-items: start;
+    gap: 18px;
+  }
+  /* 一覧は、画面の高さの中でスクロールする（ダッシュボードを見ながら一覧を探せる） */
+  .home-col:last-child > .card {
+    position: sticky;
+    top: 12px;
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+  }
+  .settings-grid {
+    display: block;
+    columns: 2;
+    column-gap: 18px;
+  }
+  .settings-grid > * {
+    break-inside: avoid;
+    margin-bottom: 18px;
+  }
+  .scan-card {
+    max-width: 920px;
+    width: min(920px, 92vw);
+  }
+  .scan-image {
+    max-height: 70vh;
+  }
+  .modal-card {
+    max-width: 640px;
+  }
+  .scan-card.modal-card {
+    max-width: 920px;
+  }
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .breakdown {
+    grid-template-columns: 1fr 1fr;
+  }
+  /* PC ではカメラが無いことが多いので、「画像を選ぶ」を主にしても押しやすいよう横並びのまま */
+  .capture-buttons button {
+    flex: 1 1 0;
+  }
+}
+
+/* ごく大きい画面では一覧を広めに */
+@media (min-width: 1440px) {
+  .home-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  }
+}
+
+/* スマホの横向き（高さが低い）: グラフを低くして、入力欄が隠れないようにする */
+@media (max-height: 500px) and (orientation: landscape) {
+  .lead-chart .recharts-responsive-container {
+    height: 160px !important;
+  }
+  .scan-image {
+    max-height: 55vh;
+  }
+}
+
+/* 入力欄の区切り（紙の Fair Meeting Note と同じ区切り） */
+.form-section {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 12px 12px;
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.form-section legend {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #1f4e79;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.next-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.next-steps li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  font-weight: normal;
+}
+.check input {
+  width: 20px;
+  height: 20px;
+}
+.next-step-fields {
+  display: flex;
+  gap: 6px;
+  flex: 1 1 220px;
+}
+.next-step-fields input[type='text'] {
+  flex: 1 1 90px;
+  min-width: 0;
+}
+.next-step-fields input[type='date'] {
+  flex: 0 1 150px;
+  min-width: 0;
+}
+input[type='datetime-local'] {
+  font: inherit;
+  font-size: 16px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  width: 100%;
+}
+.tag-outline {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-weight: 600;
+}
+
+/* アプリ名が長い（英語: Exhibition LeadLog）ので、見出しを少し小さくして設定・ログインのボタンと重ならないようにする */
+.brand-text h1 {
+  font-size: clamp(1.15rem, 5.4vw, 2rem);
+}
+.brand {
+  min-width: 0;
+}
+.brand-text {
+  min-width: 0;
+}
+.brand-text h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="rim-lead" gradientUnits="userSpaceOnUse" x1="64" y1="0" x2="448" y2="0">
+      <stop offset="0" stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="face-lead" gradientUnits="userSpaceOnUse" x1="64" y1="0" x2="448" y2="0">
+      <stop offset="0" stop-color="#818cf8"/>
+      <stop offset="0.55" stop-color="#4f7cf5"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <rect x="40" y="40" width="432" height="432" rx="96" fill="url(#rim-lead)"/>
+  <rect x="58" y="58" width="396" height="396" rx="82" fill="url(#face-lead)"/>
+  <!-- 名刺 -->
+  <g transform="rotate(-8 256 256)">
+    <rect x="104" y="160" width="304" height="192" rx="18" fill="#ffffff"/>
+    <circle cx="166" cy="232" r="34" fill="#c7d2fe"/>
+    <rect x="218" y="206" width="150" height="20" rx="10" fill="#1e3a8a"/>
+    <rect x="218" y="242" width="110" height="14" rx="7" fill="#94a3b8"/>
+    <rect x="136" y="292" width="232" height="12" rx="6" fill="#cbd5e1"/>
+    <rect x="136" y="316" width="176" height="12" rx="6" fill="#cbd5e1"/>
+  </g>
+  <!-- 読み取り枠 -->
+  <g fill="none" stroke="#fbbf24" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M96 150 V112 H140"/>
+    <path d="M372 112 H416 V150"/>
+    <path d="M416 362 V400 H372"/>
+    <path d="M140 400 H96 V362"/>
+  </g>
+</svg>

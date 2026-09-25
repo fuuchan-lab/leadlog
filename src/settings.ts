@@ -1,0 +1,271 @@
+/**
+ * 全員で共有する設定（展示会・重要度・顧客の種類・興味のある分野）。Google ドライブの settings.json で全端末にそろえる。
+ * 登録者名など、端末ごとの設定は device.ts。
+ *
+ * 項目のまとまり（展示会・重要度・顧客の種類）ごとに更新時刻を持ち、端末間では新しい方を採用する。
+ * 重要度・顧客の種類は、削除しても印を付けて残す（過去のリードの表示と Excel に名前を出すため）。
+ */
+
+export interface Category {
+  id: string
+  label: string
+  color: string
+  deleted?: boolean
+}
+
+export interface Exhibition {
+  name: string
+  /** 初日（YYYY-MM-DD） */
+  startDate: string
+  /** 会期の日数 */
+  days: number
+  /** 開場の時（0-23） */
+  startHour: number
+  /** 閉場の時（1-24） */
+  endHour: number
+  /** 会場・ブース（例: 東京ビッグサイト 東7ホール 68-20） */
+  location: string
+}
+
+export interface SharedSettings {
+  exhibition: Exhibition
+  exhibitionUpdatedAt: number
+  importance: Category[]
+  importanceUpdatedAt: number
+  customerTypes: Category[]
+  customerTypesUpdatedAt: number
+  /** 興味のある分野（製品・ブランドなど）。Excel では分野ごとに 0/1 の列になる */
+  interests: Category[]
+  interestsUpdatedAt: number
+  /** 次のアクションの種類（電話・メール、見積 など） */
+  nextActions: Category[]
+  nextActionsUpdatedAt: number
+}
+
+export type CategoryKind = 'importance' | 'customerTypes' | 'interests' | 'nextActions'
+
+export const CATEGORY_COLORS = [
+  '#dc2626',
+  '#f97316',
+  '#eab308',
+  '#22c55e',
+  '#0ea5e9',
+  '#6366f1',
+  '#a855f7',
+  '#ec4899',
+  '#64748b',
+]
+
+export const DAYS_MIN = 1
+export const DAYS_MAX = 7
+
+const pad = (n: number) => String(n).padStart(2, '0')
+
+export function todayString(now = new Date()): string {
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+}
+
+/** 初めて使う時の設定。更新時刻は 0 にして、ドライブに設定があればそちらを必ず採用する */
+export function defaultSettings(lang: 'ja' | 'en', now = new Date()): SharedSettings {
+  const importance = ['A', 'B', 'C', 'D', 'E'].map((label, i) => ({
+    id: `imp-${label.toLowerCase()}`,
+    label,
+    color: ['#dc2626', '#f97316', '#eab308', '#22c55e', '#64748b'][i],
+  }))
+  const typeLabels =
+    lang === 'ja'
+      ? ['既存顧客', '新規見込み', '代理店・パートナー', '競合', 'その他']
+      : ['Existing customer', 'New prospect', 'Distributor / partner', 'Competitor', 'Other']
+  const customerTypes = typeLabels.map((label, i) => ({
+    id: `type-${i + 1}`,
+    label,
+    color: ['#0ea5e9', '#22c55e', '#a855f7', '#f97316', '#64748b'][i],
+  }))
+  const actionLabels =
+    lang === 'ja'
+      ? ['電話・メール', '打ち合わせ・Web会議', '資料請求への対応', '見積', 'カタログ・パンフレット送付', '担当部署へ転送']
+      : ['Phone call / email', 'Meeting / web conference', 'Information requested', 'Offer', 'Catalogue / brochure', 'Forward to']
+  const nextActions = actionLabels.map((label, i) => ({
+    id: `act-${i + 1}`,
+    label,
+    color: ['#0ea5e9', '#6366f1', '#22c55e', '#f97316', '#a855f7', '#64748b'][i],
+  }))
+  return {
+    exhibition: { name: '', startDate: todayString(now), days: 3, startHour: 10, endHour: 17, location: '' },
+    exhibitionUpdatedAt: 0,
+    importance,
+    importanceUpdatedAt: 0,
+    customerTypes,
+    customerTypesUpdatedAt: 0,
+    interests: [],
+    interestsUpdatedAt: 0,
+    nextActions,
+    nextActionsUpdatedAt: 0,
+  }
+}
+
+function isCategory(x: unknown): x is Category {
+  const c = x as Partial<Category> | null
+  return !!c && typeof c.id === 'string' && typeof c.label === 'string' && typeof c.color === 'string'
+}
+
+function clampInt(v: unknown, min: number, max: number, fallback: number): number {
+  const n = Math.round(Number(v))
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback
+}
+
+/** 保存内容・ドライブのファイルを読み込む。壊れた部分は既定値で補う */
+export function parseSettings(text: string, fallback: SharedSettings): SharedSettings {
+  const data = JSON.parse(text) as Partial<SharedSettings> | null
+  if (!data || typeof data !== 'object') throw new Error('invalid-settings')
+  const ex = (data.exhibition ?? {}) as Partial<Exhibition>
+  const startHour = clampInt(ex.startHour, 0, 23, fallback.exhibition.startHour)
+  return {
+    exhibition: {
+      name: typeof ex.name === 'string' ? ex.name : fallback.exhibition.name,
+      startDate:
+        typeof ex.startDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(ex.startDate)
+          ? ex.startDate
+          : fallback.exhibition.startDate,
+      days: clampInt(ex.days, DAYS_MIN, DAYS_MAX, fallback.exhibition.days),
+      startHour,
+      endHour: clampInt(ex.endHour, startHour + 1, 24, Math.max(startHour + 1, fallback.exhibition.endHour)),
+      location: typeof ex.location === 'string' ? ex.location : fallback.exhibition.location,
+    },
+    exhibitionUpdatedAt: Number(data.exhibitionUpdatedAt) || 0,
+    importance: Array.isArray(data.importance) ? data.importance.filter(isCategory) : fallback.importance,
+    importanceUpdatedAt: Number(data.importanceUpdatedAt) || 0,
+    customerTypes: Array.isArray(data.customerTypes) ? data.customerTypes.filter(isCategory) : fallback.customerTypes,
+    customerTypesUpdatedAt: Number(data.customerTypesUpdatedAt) || 0,
+    interests: Array.isArray(data.interests) ? data.interests.filter(isCategory) : fallback.interests,
+    interestsUpdatedAt: Number(data.interestsUpdatedAt) || 0,
+    nextActions: Array.isArray(data.nextActions) ? data.nextActions.filter(isCategory) : fallback.nextActions,
+    nextActionsUpdatedAt: Number(data.nextActionsUpdatedAt) || 0,
+  }
+}
+
+export function serializeSettings(s: SharedSettings): string {
+  return JSON.stringify({ version: 1, ...s })
+}
+
+/** まとまりごとに、更新時刻が新しい方を採用する */
+export function mergeSettings(local: SharedSettings, remote: SharedSettings): SharedSettings {
+  const ex = remote.exhibitionUpdatedAt > local.exhibitionUpdatedAt ? remote : local
+  const imp = remote.importanceUpdatedAt > local.importanceUpdatedAt ? remote : local
+  const types = remote.customerTypesUpdatedAt > local.customerTypesUpdatedAt ? remote : local
+  const interests = remote.interestsUpdatedAt > local.interestsUpdatedAt ? remote : local
+  const actions = remote.nextActionsUpdatedAt > local.nextActionsUpdatedAt ? remote : local
+  return {
+    exhibition: ex.exhibition,
+    exhibitionUpdatedAt: ex.exhibitionUpdatedAt,
+    importance: imp.importance,
+    importanceUpdatedAt: imp.importanceUpdatedAt,
+    customerTypes: types.customerTypes,
+    customerTypesUpdatedAt: types.customerTypesUpdatedAt,
+    interests: interests.interests,
+    interestsUpdatedAt: interests.interestsUpdatedAt,
+    nextActions: actions.nextActions,
+    nextActionsUpdatedAt: actions.nextActionsUpdatedAt,
+  }
+}
+
+export function sameSettings(a: SharedSettings, b: SharedSettings): boolean {
+  return serializeSettings(a) === serializeSettings(b)
+}
+
+export const visibleCategories = (list: Category[]) => list.filter((c) => !c.deleted)
+
+/** ID から表示名を探す（削除済みも含めて）。見つからなければ '' */
+export function categoryLabel(list: Category[], id: string): string {
+  return list.find((c) => c.id === id)?.label ?? ''
+}
+
+export function categoryColor(list: Category[], id: string): string {
+  return list.find((c) => c.id === id)?.color ?? '#94a3b8'
+}
+
+export type CategoryResult = { ok: true; list: Category[] } | { ok: false; reason: 'empty' | 'duplicate' }
+
+function isDuplicate(list: Category[], label: string, exceptId?: string): boolean {
+  const key = label.toLowerCase()
+  return visibleCategories(list).some((c) => c.id !== exceptId && c.label.toLowerCase() === key)
+}
+
+export function addCategory(list: Category[], rawLabel: string, id: string): CategoryResult {
+  const label = rawLabel.trim()
+  if (!label) return { ok: false, reason: 'empty' }
+  if (isDuplicate(list, label)) return { ok: false, reason: 'duplicate' }
+  const used = new Set(visibleCategories(list).map((c) => c.color))
+  const color = CATEGORY_COLORS.find((c) => !used.has(c)) ?? CATEGORY_COLORS[list.length % CATEGORY_COLORS.length]
+  return { ok: true, list: [...list, { id, label, color }] }
+}
+
+export function updateCategory(list: Category[], id: string, rawLabel: string, color: string): CategoryResult {
+  const label = rawLabel.trim()
+  if (!label) return { ok: false, reason: 'empty' }
+  if (isDuplicate(list, label, id)) return { ok: false, reason: 'duplicate' }
+  return { ok: true, list: list.map((c) => (c.id === id ? { ...c, label, color } : c)) }
+}
+
+export function removeCategory(list: Category[], id: string): Category[] {
+  return list.map((c) => (c.id === id ? { ...c, deleted: true } : c))
+}
+
+/** 表示中の項目の中で、1つ上（-1）・下（1）と入れ替える。端なら同じ配列を返す */
+export function moveCategory(list: Category[], id: string, direction: -1 | 1): Category[] {
+  const visible = visibleCategories(list)
+  const i = visible.findIndex((c) => c.id === id)
+  const j = i + direction
+  if (i < 0 || j < 0 || j >= visible.length) return list
+  const a = list.indexOf(visible[i])
+  const b = list.indexOf(visible[j])
+  const next = [...list]
+  ;[next[a], next[b]] = [next[b], next[a]]
+  return next
+}
+
+// ---- この端末での保存 ----
+
+const SETTINGS_KEY = 'leadlog-settings'
+const DIRTY_KEY = 'leadlog-settings-dirty'
+
+export function loadSettings(lang: 'ja' | 'en'): SharedSettings {
+  const fallback = defaultSettings(lang)
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY)
+    return raw ? parseSettings(raw, fallback) : fallback
+  } catch {
+    return fallback
+  }
+}
+
+export function saveSettings(s: SharedSettings) {
+  try {
+    localStorage.setItem(SETTINGS_KEY, serializeSettings(s))
+  } catch {
+    // 保存できなくても、その回の表示には使える
+  }
+}
+
+export function isSettingsDirty(): boolean {
+  try {
+    return localStorage.getItem(DIRTY_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function setSettingsDirty(dirty: boolean) {
+  try {
+    if (dirty) localStorage.setItem(DIRTY_KEY, '1')
+    else localStorage.removeItem(DIRTY_KEY)
+  } catch {
+    // 無視
+  }
+}
+
+/** 会期の各日の 0時 (epoch ms) */
+export function exhibitionDays(ex: Exhibition): number[] {
+  const [y, m, d] = ex.startDate.split('-').map(Number)
+  return Array.from({ length: ex.days }, (_, i) => new Date(y, m - 1, d + i).getTime())
+}
