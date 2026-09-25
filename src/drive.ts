@@ -17,6 +17,8 @@ export const driveConfig = {
   scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile',
 }
 
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file'
+
 const TOKEN_KEY = 'leadlog-drive-token'
 const SESSION_KEY = 'leadlog-drive-session'
 
@@ -111,6 +113,11 @@ export async function getAccessToken(interactive = true, promptOverride: string 
         waiter.fail(res.error)
         return
       }
+      // ログインの確認画面では、項目ごとにチェックを外して許可できる。ドライブへのアクセスが外されていたら失敗にする
+      if (!google.accounts.oauth2.hasGrantedAllScopes(res, DRIVE_SCOPE)) {
+        waiter.fail('drive_scope_not_granted')
+        return
+      }
       accessToken = res.access_token
       storeToken(res.access_token, res.expires_in)
       waiter.resolve(res.access_token)
@@ -131,8 +138,23 @@ async function driveFetch(url: string, init: RequestInit = {}, allowRetry = true
     await getAccessToken(false)
     return driveFetch(url, init, false)
   }
-  if (!res.ok) throw new Error(`drive-request-failed-${res.status}`)
+  if (!res.ok) throw new Error(`drive-request-failed-${res.status}${await errorReason(res)}`)
   return res
+}
+
+/**
+ * Google の API のエラー応答から、原因（例: accessNotConfigured = Drive API が有効になっていない、
+ * insufficientPermissions = ドライブへのアクセスが許可されていない）を取り出す。画面の「詳細」で原因が分かるように
+ */
+async function errorReason(res: Response): Promise<string> {
+  try {
+    const data = (await res.json()) as { error?: { errors?: { reason?: string }[]; status?: string; message?: string } }
+    const reason = data.error?.errors?.[0]?.reason ?? data.error?.status
+    const message = data.error?.message?.split('\n')[0]
+    return reason ? ` ${reason}${message ? `: ${message.slice(0, 160)}` : ''}` : ''
+  } catch {
+    return ''
+  }
 }
 
 const escapeQuery = (s: string) => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")

@@ -106,8 +106,13 @@ export function useGoogleAuth() {
         if (!restoring) {
           console.error('[login]', e)
           // ログイン画面を閉じた・完了しなかった場合は、専用の文言にする（原因の詳細も付ける）
-          const incomplete = e instanceof Error && (e.message === 'popup_closed' || e.message === 'login_timeout')
-          say({ kind: 'error', key: incomplete ? 'notice.loginIncomplete' : 'notice.loginFailed', detail: describeError(e) })
+          const message = e instanceof Error ? e.message : ''
+          const incomplete = message === 'popup_closed' || message === 'login_timeout'
+          // ドライブへのアクセスが許可されていない（確認画面でチェックを外した・API が有効でない）場合は、専用の案内にする
+          const noDrive = message === 'drive_scope_not_granted' || /insufficient(Permissions|Scopes)|ACCESS_TOKEN_SCOPE_INSUFFICIENT/.test(message)
+          const apiOff = /accessNotConfigured|SERVICE_DISABLED/.test(message)
+          const key = noDrive ? 'notice.driveNotGranted' : apiOff ? 'notice.driveApiOff' : incomplete ? 'notice.loginIncomplete' : 'notice.loginFailed'
+          say({ kind: 'error', key, detail: describeError(e) })
         }
         return false
       } finally {
