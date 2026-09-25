@@ -33,7 +33,7 @@ export function Header({ view, onToggleSettings, auth, sync, unsyncedCount }: Pr
     <>
       <header className="topbar">
         <div className="brand">
-          <img className="brand-logo" src="./favicon.svg" alt="" />
+          <img className="brand-logo" src="./icon-192.png" alt="" />
           <div className="brand-text">
             <p className="eyebrow">{t('header.eyebrow')}</p>
             <h1>{t('header.title')}</h1>

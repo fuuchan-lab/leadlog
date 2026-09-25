@@ -9,7 +9,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.ico', 'favicon-16.png', 'favicon-32.png', 'apple-touch-icon.png'],
       manifest: {
         name: '展示会リードログ',
         short_name: '展示会リードログ',
@@ -21,10 +21,15 @@ export default defineConfig({
         categories: ['business', 'productivity'],
         start_url: './',
         scope: './',
-        background_color: '#f4f6fb',
-        theme_color: '#1d4ed8',
-        // PNG アイコン（192/512・maskable）はストア公開の前に用意する（docs/android.md）
-        icons: [{ src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
+        background_color: '#0b2a6b',
+        theme_color: '#0b2a6b',
+        icons: [
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+          // Android が丸や角丸に切り抜いても絵柄が欠けないよう、全面の背景で絵柄を中央に寄せた専用のアイコン
+          { src: 'icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,

@@ -7,8 +7,7 @@ TWA は端末の Chrome で動くので、Google ログイン（ポップアッ�
 
 1. 公開先を決める（例: `https://leadlog.doitmyself.net/`）。GitHub Pages ＋独自ドメインの場合は、`public/CNAME` を置く。
 2. Google Cloud Console の OAuth クライアントの「承認済みの JavaScript 生成元」に、公開先の URL を追加する。
-3. PNG アイコンを用意して `vite.config.ts` の manifest に追加する（192×192・512×512・maskable の 192/512）。
-   今は SVG（`public/favicon.svg`）だけ。
+3. アイコンは用意済み（`public/icon-*.png`・`icon-maskable-*.png`・`apple-touch-icon.png`・favicon）。
 4. プライバシーポリシー（`public/privacy.html`）の内容・連絡先を確認する。
 5. ストア用の画像（フィーチャーグラフィック 1024×500、スクリーンショット）を用意する。
 
