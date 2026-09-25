@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n.ts'
-import { loadLeadPhoto } from '../photos.ts'
+import { loadLeadPhoto, reloadLeadPhoto } from '../photos.ts'
 
 interface Props {
   id: string
@@ -16,29 +16,55 @@ interface Props {
 export function LeadPhoto({ id, className, explain = false, onClick, alt }: Props) {
   const { t } = useI18n()
   const [state, setState] = useState<{ id: string; url: string | null; done: boolean }>({ id, url: null, done: false })
+  /** 表示に失敗して、ドライブから取り直したか（1回だけ） */
+  const retried = useRef(false)
+  const objectUrl = useRef<string | null>(null)
+
+  const show = useCallback(
+    (blob: Blob | null) => {
+      if (objectUrl.current) URL.revokeObjectURL(objectUrl.current)
+      objectUrl.current = blob ? URL.createObjectURL(blob) : null
+      setState({ id, url: objectUrl.current, done: true })
+    },
+    [id],
+  )
 
   useEffect(() => {
-    let objectUrl: string | null = null
     let cancelled = false
+    retried.current = false
     void loadLeadPhoto(id).then((blob) => {
-      if (cancelled) return
-      if (blob) objectUrl = URL.createObjectURL(blob)
-      setState({ id, url: objectUrl, done: true })
+      if (!cancelled) show(blob)
     })
     return () => {
       cancelled = true
-      if (objectUrl) URL.revokeObjectURL(objectUrl)
+      if (objectUrl.current) URL.revokeObjectURL(objectUrl.current)
+      objectUrl.current = null
     }
-  }, [id])
+  }, [id, show])
+
+  /**
+   * 画像を表示できなかった（端末に保存した画像が読めなくなっていた等）。「?」の印を出したままにせず、
+   * 1回だけドライブから取り直す。それでも駄目なら表示しない
+   */
+  const onError = () => {
+    if (retried.current) {
+      show(null)
+      return
+    }
+    retried.current = true
+    setState({ id, url: null, done: false })
+    void reloadLeadPhoto(id).then(show)
+  }
 
   const current = state.id === id ? state : { url: null, done: false }
   if (current.url) {
+    const img = <img className={className} src={current.url} alt={alt ?? t('form.photo')} onError={onError} />
     return onClick ? (
       <button type="button" className="photo-button" onClick={onClick} aria-label={alt ?? t('form.photo')}>
-        <img className={className} src={current.url} alt={alt ?? t('form.photo')} />
+        {img}
       </button>
     ) : (
-      <img className={className} src={current.url} alt={alt ?? t('form.photo')} />
+      img
     )
   }
   if (!explain) return null
