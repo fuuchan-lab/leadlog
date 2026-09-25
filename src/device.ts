@@ -80,3 +80,14 @@ export function currentAuthor(): Author {
 export function authorLabel(a: Author): string {
   return a.member ? `${a.member} (${a.device})` : `${a.device} #${a.deviceId.slice(0, 4)}`
 }
+
+/**
+ * パソコン（タブレット・スマホでない）か。パソコンでは「撮影する」でアプリの中のカメラを使う。
+ * iPad は Mac と同じ名乗りをするので、タッチ操作ができるかで見分ける
+ */
+export function isDesktop(): boolean {
+  const ua = navigator.userAgent
+  if (/Android|iPhone|iPad|iPod|Mobile/i.test(ua)) return false
+  if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return false
+  return typeof navigator.mediaDevices?.getUserMedia === 'function'
+}

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { describeError } from '../errors.ts'
+import { isDesktop } from '../device.ts'
 import type { Exhibition } from '../exhibitions.ts'
 import type { NewLeadExtras } from '../hooks/useLeads.ts'
 import { useI18n } from '../i18n/useI18n.ts'
@@ -9,6 +10,7 @@ import { recognize, type OcrProgress } from '../scan/ocr.ts'
 import { canvasToJpeg, findDocument, loadPhoto, makeDocument, toCanvas } from '../scan/scanImage.ts'
 import { EMPTY_FIELDS, hasContent, type Lead, type LeadFields } from '../types.ts'
 import { LeadForm, type FormLists } from './LeadForm.tsx'
+import { CameraModal } from './CameraModal.tsx'
 import { ScanModal } from './ScanModal.tsx'
 
 interface Props {
@@ -47,6 +49,8 @@ export function CaptureCard({ lists, member, leads, exhibition, memberReady, onS
   const [ocrText, setOcrText] = useState('')
   const [message, setMessage] = useState<Message>(null)
   const [saving, setSaving] = useState(false)
+  /** パソコンのカメラの画面を開いているか */
+  const [cameraOpen, setCameraOpen] = useState(false)
   /** 前回の画像を選んだ方法（撮影 / 画像を選ぶ）。「再撮影」で同じ方法を開く */
   const [source, setSource] = useState<'camera' | 'pick'>('camera')
   /** OCR が入れた欄とその値。再撮影の時、手で直していない欄だけ消すために使う */
@@ -69,6 +73,11 @@ export function CaptureCard({ lists, member, leads, exhibition, memberReady, onS
 
   const openPicker = (from: 'camera' | 'pick') => {
     setSource(from)
+    // パソコンでは、ファイル選択の capture 指定でカメラが起動しないので、アプリの中のカメラ（インカメラ）で撮る
+    if (from === 'camera' && isDesktop()) {
+      setCameraOpen(true)
+      return
+    }
     ;(from === 'camera' ? cameraRef : pickRef).current?.click()
   }
 
@@ -108,13 +117,18 @@ export function CaptureCard({ lists, member, leads, exhibition, memberReady, onS
     openPicker(source)
   }
 
-  const onFile = async (file: File | undefined) => {
+  /**
+   * 撮った・選んだ画像を読み込み、四隅を探して「範囲を合わせる」画面を出す。
+   * guide は、パソコンのカメラで名刺を合わせた枠の位置（四隅を自動で見つけられない時の初期値）
+   */
+  const onFile = async (file: Blob | undefined, guide?: Quad) => {
     if (!file) return
     setMessage(null)
     setStage({ kind: 'loading' })
     try {
       const image = await loadPhoto(file)
-      const { quad, found } = findDocument(image)
+      const detected = findDocument(image)
+      const { quad, found } = !detected.found && guide ? { quad: guide, found: false } : detected
       setStage({ kind: 'adjust', image, quad, found })
     } catch (e) {
       console.error('[scan-load]', e)
@@ -280,6 +294,21 @@ export function CaptureCard({ lists, member, leads, exhibition, memberReady, onS
             </button>
           </div>
         </div>
+      )}
+
+      {cameraOpen && (
+        <CameraModal
+          onClose={() => setCameraOpen(false)}
+          onPickFile={() => {
+            setCameraOpen(false)
+            setSource('pick')
+            pickRef.current?.click()
+          }}
+          onCapture={(blob, guide) => {
+            setCameraOpen(false)
+            void onFile(blob, guide)
+          }}
+        />
       )}
 
       {stage.kind === 'adjust' && (
