@@ -6,6 +6,7 @@ import type { Lang } from '../i18n/context.ts'
 import { useI18n } from '../i18n/useI18n.ts'
 import { isOcrReady, prepareOcr } from '../scan/ocr.ts'
 import { belongsTo } from '../exhibitions.ts'
+import { useLeaveGuard } from '../leaveGuard.ts'
 import { applyTheme, loadTheme, saveTheme, type ThemePreference } from '../theme.ts'
 import type { Lead } from '../types.ts'
 import { CategoryEditor } from './CategoryEditor.tsx'
@@ -34,6 +35,8 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn }: Prop
   const { t, lang, setLang } = useI18n()
   const [theme, setTheme] = useState<ThemePreference>(loadTheme)
   const [memberDraft, setMemberDraft] = useState(member)
+  // 登録者名を書き換えて「保存」を押していなければ、「戻る」の時に保存するか聞く
+  useLeaveGuard('member', memberDraft.trim() !== '' && memberDraft.trim() !== member, () => onMember(memberDraft.trim()))
   const [memberSaved, setMemberSaved] = useState(false)
   const [exp, setExp] = useState<ExportState>({ status: 'idle' })
   const [scope, setScope] = useState<'all' | 'exhibition'>('exhibition')

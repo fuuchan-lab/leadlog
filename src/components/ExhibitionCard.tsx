@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { putPhoto } from '../db.ts'
 import { describeError } from '../errors.ts'
+import { useLeaveGuard } from '../leaveGuard.ts'
 import { shrinkLogo } from '../scan/logo.ts'
 import { belongsTo, dayCount, newExhibition, parseDate, type Exhibition } from '../exhibitions.ts'
 import type { ExhibitionFields, SharedSettingsState } from '../hooks/useSharedSettings.ts'
@@ -94,6 +95,13 @@ export function ExhibitionCard({ shared, leads }: Props) {
 
   const cleaned = { ...draft, name: draft.name.trim(), location: draft.location.trim() }
   const changed = current !== null && JSON.stringify(cleaned) !== JSON.stringify(fieldsOf(current))
+
+  // 「戻る」で「変更を保存しますか？」を出すための登録。展示会名が空のものは保存できないので、変更なしとみなす
+  const unsaved = cleaned.name !== '' && ((tab === 'edit' && changed) || tab === 'new')
+  useLeaveGuard('exhibition', unsaved, () => {
+    if (tab === 'new') shared.createExhibition(cleaned)
+    else if (current) shared.updateExhibition(current.id, cleaned)
+  })
 
   return (
     <section className="card">

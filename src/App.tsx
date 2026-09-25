@@ -3,6 +3,7 @@ import { CaptureCard } from './components/CaptureCard.tsx'
 import { Header } from './components/Header.tsx'
 import { LeadList } from './components/LeadList.tsx'
 import { MemberPrompt } from './components/MemberPrompt.tsx'
+import { SaveChangesModal } from './components/SaveChangesModal.tsx'
 import { SettingsPage } from './components/SettingsPage.tsx'
 import { StatusCard } from './components/StatusCard.tsx'
 import { loadMember, saveMember } from './device.ts'
@@ -13,6 +14,7 @@ import { useOnline } from './hooks/useOnline.ts'
 import { useSharedSettings } from './hooks/useSharedSettings.ts'
 import { useSync } from './hooks/useSync.ts'
 import { useI18n } from './i18n/useI18n.ts'
+import { hasUnsavedChanges, saveAllChanges } from './leaveGuard.ts'
 
 export default function App() {
   const { t, lang } = useI18n()
@@ -20,6 +22,7 @@ export default function App() {
   // URL の末尾が #settings なら設定の画面から開く（ホーム画面のショートカットや確認用）
   const [view, setView] = useState<'home' | 'settings'>(() => (location.hash === '#settings' ? 'settings' : 'home'))
   const [member, setMember] = useState(loadMember)
+  const [askSave, setAskSave] = useState(false)
   const { leads, unsyncedCount, reload, add, update, remove } = useLeads()
   const shared = useSharedSettings()
   const auth = useGoogleAuth()
@@ -41,7 +44,12 @@ export default function App() {
     <main className="app">
       <Header
         view={view}
-        onToggleSettings={() => setView(view === 'home' ? 'settings' : 'home')}
+        onToggleSettings={() => {
+          if (view === 'home') setView('settings')
+          // 設定の画面から戻る時、保存していない変更があれば「変更を保存しますか？」を出す
+          else if (hasUnsavedChanges()) setAskSave(true)
+          else setView('home')
+        }}
         auth={auth}
         sync={sync}
         unsyncedCount={unsyncedCount}
@@ -106,6 +114,20 @@ export default function App() {
           />
           </div>
         </div>
+      )}
+      {askSave && (
+        <SaveChangesModal
+          onSave={() => {
+            saveAllChanges()
+            setAskSave(false)
+            setView('home')
+          }}
+          onDiscard={() => {
+            setAskSave(false)
+            setView('home')
+          }}
+          onCancel={() => setAskSave(false)}
+        />
       )}
     </main>
   )

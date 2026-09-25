@@ -2104,3 +2104,17 @@ input[type='datetime-local'] {
   align-items: center;
   justify-content: center;
 }
+
+/* 「変更を保存しますか？」 */
+.confirm-card {
+  max-width: 360px;
+}
+.confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.confirm-actions button {
+  min-height: 46px;
+  font-weight: 700;
+}

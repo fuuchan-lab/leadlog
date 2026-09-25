@@ -145,6 +145,10 @@ export const ja = {
   'popup.photoMissing': '画像はまだこの端末にありません（ログインしてオンラインになると表示されます）。',
 
   // 設定
+  'leave.title': '変更を保存しますか？',
+  'leave.help': '設定の画面に、まだ保存していない変更（展示会・ロゴ・登録者名など）があります。',
+  'leave.yes': 'はい',
+  'leave.no': 'いいえ',
   'help.open': 'ヘルプ（使い方）を開く',
   'help.title': 'ヘルプ・使い方',
   'help.subtitle': '最初の準備、名刺の登録、複数人での使い方、Excel 出力、活用のコツ',
@@ -397,6 +401,10 @@ export const en: Record<MessageKey, string> = {
   'popup.photoLoading': 'Loading image…',
   'popup.photoMissing': 'The image is not on this device yet (it appears once you are logged in and online).',
 
+  'leave.title': 'Save your changes?',
+  'leave.help': 'There are unsaved changes in Settings (show, logo, your name, etc.).',
+  'leave.yes': 'Yes',
+  'leave.no': 'No',
   'help.open': 'Open help',
   'help.title': 'Help & how to use',
   'help.subtitle': 'Getting started, adding leads, team use, Excel export, tips',
