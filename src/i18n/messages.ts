@@ -11,7 +11,7 @@ export const ja = {
   'common.none': '（なし）',
 
   // ヘッダー・アカウント
-  'header.eyebrow': '展示会 名刺・リード記録簿',
+  'header.eyebrow': '展示会リード記録簿',
   'header.title': 'リードログ',
   'header.openSettings': '設定を開く',
   'header.settings': '設定',
@@ -268,7 +268,7 @@ export const en: Record<MessageKey, string> = {
   'common.add': 'Add',
   'common.none': '(none)',
 
-  'header.eyebrow': 'Trade show lead capture',
+  'header.eyebrow': 'Exhibition Lead Manager',
   'header.title': 'LeadLog',
   'header.openSettings': 'Open settings',
   'header.settings': 'Settings',
