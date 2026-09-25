@@ -8,6 +8,35 @@ const CARD_RATIO = 91 / 55
 /** 映像の中の、名刺を合わせる枠の大きさ（映像の幅に対する割合） */
 const GUIDE_WIDTH = 0.62
 
+/**
+ * Windows のカメラの AI 効果（Windows Studio Effects）を表す、ブラウザの非標準の制約。
+ * Surface などの内蔵カメラでは、顔だけを認識してそれ以外（手に持った名刺など）をぼかす「背景効果」が
+ * 既定でオンになっていることがある。Chrome/Edge には、これを Web ページから個別にオフにする仕組みがある
+ * （対応していないブラウザでは、指定しても無視されるだけで害はない）
+ */
+interface WindowsCameraConstraints extends MediaTrackConstraintSet {
+  backgroundBlur?: boolean
+  backgroundSegmentationMask?: boolean
+  eyeGazeCorrection?: boolean
+  faceFraming?: boolean
+}
+
+/** 名刺を撮るのに邪魔になる、カメラの AI 効果をオフにする（できる範囲で。失敗しても撮影は続けられる） */
+async function disableCameraEffects(track: MediaStreamTrack) {
+  const capabilities = track.getCapabilities?.() as WindowsCameraConstraints | undefined
+  const off: WindowsCameraConstraints = {}
+  if (capabilities?.backgroundBlur) off.backgroundBlur = false
+  if (capabilities?.backgroundSegmentationMask) off.backgroundSegmentationMask = false
+  if (capabilities?.faceFraming) off.faceFraming = false
+  if (Object.keys(off).length === 0) return
+  try {
+    await track.applyConstraints({ advanced: [off] })
+  } catch (e) {
+    // このカメラ・ブラウザでは切り替えられない。Windows の設定から手動でオフにしてもらう
+    console.error('[camera-effects]', e)
+  }
+}
+
 interface Props {
   /** 撮った画像と、名刺を合わせる枠の位置（画像の座標）。四隅を自動で見つけられない時の初期値に使う */
   onCapture: (image: Blob, guide: Quad) => void
@@ -49,6 +78,8 @@ export function CameraModal({ onCapture, onClose, onPickFile }: Props) {
         },
       })
       streamRef.current = stream
+      const track = stream.getVideoTracks()[0]
+      if (track) void disableCameraEffects(track)
       const video = videoRef.current
       if (video) {
         video.srcObject = stream
