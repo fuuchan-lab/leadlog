@@ -72,6 +72,21 @@ export function CaptureCard({ lists, member, leads, exhibition, memberReady, onS
     ;(from === 'camera' ? cameraRef : pickRef).current?.click()
   }
 
+  /** 入力中（保存していない）の内容があるか */
+  const hasDraft = open && (photo !== null || JSON.stringify(fields) !== JSON.stringify(EMPTY_FIELDS))
+
+  /**
+   * 「撮影する」「画像を選ぶ」は、新しいリードの読み取りを始める。
+   * 前の名刺の内容が入力欄に残っていると、読み取り結果が空欄にしか入らず前の内容が残ってしまうので、
+   * 入力欄を空にしてから読み取る（保存していない内容があれば、破棄してよいか確かめる）
+   */
+  const startNew = (from: 'camera' | 'pick') => {
+    if (hasDraft && !confirm(t('capture.confirmDiscard'))) return
+    reset()
+    setMessage(null)
+    openPicker(from)
+  }
+
   /**
    * 撮り直す。写真がぶれた・読み取りがうまくいかなかった時のため。
    * OCR が入れた欄のうち、手で直していないものは消す（新しい写真の読み取り結果を入れ直すため）。
@@ -185,10 +200,10 @@ export function CaptureCard({ lists, member, leads, exhibition, memberReady, onS
       <p className="muted small">{t('capture.help')}</p>
       {!memberReady && <p className="banner banner-caution">{t('capture.needMember')}</p>}
       <div className="capture-buttons">
-        <button className="primary" disabled={busy || !memberReady} onClick={() => openPicker('camera')}>
+        <button className="primary" disabled={busy || !memberReady} onClick={() => startNew('camera')}>
           {t('capture.camera')}
         </button>
-        <button className="secondary" disabled={busy || !memberReady} onClick={() => openPicker('pick')}>
+        <button className="secondary" disabled={busy || !memberReady} onClick={() => startNew('pick')}>
           {t('capture.pick')}
         </button>
         <button className="secondary" disabled={busy || !memberReady} onClick={() => setOpen(true)}>
