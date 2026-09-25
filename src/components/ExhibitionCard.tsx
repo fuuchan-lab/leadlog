@@ -94,13 +94,26 @@ export function ExhibitionCard({ shared, leads }: Props) {
   }
 
   const cleaned = { ...draft, name: draft.name.trim(), location: draft.location.trim() }
+
+  /** 空白・大文字小文字の違いを無視して比べる（「SEMICON2026」と「SEMICON 2026」のような、紛らわしい名前を見分けるため） */
+  const normalizeName = (name: string) => name.replace(/\s+/g, '').toLowerCase()
+  /** 新しく作ろうとしている名前と紛らわしい、既存の展示会（自分自身は除く） */
+  const similarExisting = shared.settings.exhibitions.find(
+    (e) => !e.deleted && e.id !== current?.id && normalizeName(e.name) === normalizeName(cleaned.name) && e.name !== cleaned.name,
+  )
+  /** 紛らわしい名前のまま作成してよいか確認する。問題なければ（確認不要なら）true */
+  const confirmCreate = (): boolean =>
+    !similarExisting || confirm(t('exhibition.confirmSimilarName', { existing: similarExisting.name, entered: cleaned.name }))
   const changed = current !== null && JSON.stringify(cleaned) !== JSON.stringify(fieldsOf(current))
 
   // 「戻る」で「変更を保存しますか？」を出すための登録。展示会名が空のものは保存できないので、変更なしとみなす
   const unsaved = cleaned.name !== '' && ((tab === 'edit' && changed) || tab === 'new')
   useLeaveGuard('exhibition', unsaved, () => {
-    if (tab === 'new') shared.createExhibition(cleaned)
-    else if (current) shared.updateExhibition(current.id, cleaned)
+    // 「戻る」からの自動保存では、確認のダイアログを出せない（ユーザーの操作を待てないため）。
+    // 紛らわしい名前の時は、念のため作らない（設定の画面に留まって、手動で「作成して開く」を押してもらう）
+    if (tab === 'new') {
+      if (!similarExisting) shared.createExhibition(cleaned)
+    } else if (current) shared.updateExhibition(current.id, cleaned)
   })
 
   return (
@@ -271,6 +284,7 @@ export function ExhibitionCard({ shared, leads }: Props) {
                 className="primary"
                 disabled={!cleaned.name}
                 onClick={() => {
+                  if (!confirmCreate()) return
                   shared.createExhibition(cleaned)
                   setTab('edit')
                   setCopiedFrom(null)

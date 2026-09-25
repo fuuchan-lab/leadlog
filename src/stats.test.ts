@@ -61,6 +61,25 @@ test('会期中のリードを、時間帯 × 日で数える', () => {
   )
 })
 
+test('登録者別は、同じ登録者名なら別の端末の分もまとめて数える。名前が無い端末は端末ごとに分ける', () => {
+  const t = new Date(2026, 9, 7, 11)
+  const leads = [
+    lead('1', t, {}, 'aaaaaaaa', '平井'),
+    lead('2', t, {}, 'bbbbbbbb', '平井'), // 別の端末・同じ名前
+    lead('3', t, {}, 'cccccccc', ''), // 名前を入れていない端末
+    lead('4', t, {}, 'dddddddd', ''), // こちらも名前が無い。別人として分ける
+  ]
+  const d = buildDashboard(leads, ex, t.getTime())
+  assert.deepEqual(
+    d.byMember.map((m) => [m.member, m.count, m.deviceIds.length]),
+    [
+      ['平井', 2, 2],
+      ['', 1, 1],
+      ['', 1, 1],
+    ],
+  )
+})
+
 test('今日の件数は、会期外の日でも、今日登録した件数を数える', () => {
   const leads = [lead('1', new Date(2026, 9, 20, 9, 0)), lead('2', new Date(2026, 9, 20, 23, 59)), lead('3', new Date(2026, 9, 19, 12, 0))]
   const d = buildDashboard(leads, ex, new Date(2026, 9, 20, 15).getTime())

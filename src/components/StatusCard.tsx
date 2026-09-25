@@ -119,8 +119,10 @@ function Dashboard({ leads, ex, importance }: { leads: Lead[]; ex: Exhibition; i
             <p className="breakdown-title">{t('dash.byMember')}</p>
             <ul className="stat-chips">
               {d.byMember.map((m) => (
-                <li key={m.deviceId} title={`${m.device} #${m.deviceId}`}>
-                  👤 {m.member || `#${m.deviceId.slice(0, 4)}`} <strong>{m.count}</strong>
+                <li key={m.key} title={m.deviceIds.map((id) => `#${id}`).join(' / ')}>
+                  👤 {m.member || `#${m.deviceIds[0].slice(0, 4)}`}
+                  {m.deviceIds.length > 1 && <span className="muted small"> ({m.deviceIds.length}台)</span>}{' '}
+                  <strong>{m.count}</strong>
                 </li>
               ))}
             </ul>
