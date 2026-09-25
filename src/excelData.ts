@@ -259,7 +259,7 @@ export function hourlySheet(leads: Lead[], ex: Exhibition, t: TFn): SheetContent
   data.push([
     { value: t('xlsx.colTotal'), fontWeight: 'bold', ...border },
     ...d.perDay.map((value): Cell => ({ value, align: 'right', fontWeight: 'bold', ...border })),
-    { value: d.total - d.outside, align: 'right', fontWeight: 'bold', ...border },
+    { value: d.inPeriod - d.outside, align: 'right', fontWeight: 'bold', ...border },
   ])
   if (d.outside > 0) data.push([{ value: t('xlsx.outside', { n: d.outside }) }])
   return { data, columns: [{ width: 14 }, ...d.perDay.map(() => ({ width: 10 })), { width: 10 }], headerRows: 1 }

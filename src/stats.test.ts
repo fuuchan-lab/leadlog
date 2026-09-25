@@ -41,28 +41,33 @@ test('会期中のリードを、時間帯 × 日で数える', () => {
     lead('6', new Date(2026, 9, 7, 11, 0), { exhibitionId: 'other' }), // 別の展示会
   ]
   const d = buildDashboard(leads, ex, new Date(2026, 9, 8, 12).getTime())
-  assert.equal(d.total, 4)
+  // 累計は、会期の前後を含むこの展示会のリードすべて（別の展示会のリードは含まない）
+  assert.equal(d.total, 5)
+  assert.equal(d.inPeriod, 4)
   assert.deepEqual(d.perDay, [2, 1, 1])
   assert.equal(d.rows.length, 7)
   assert.equal(d.rows[0].day0, 2)
   assert.equal(d.rows[6].day1, 1)
   assert.equal(d.outside, 1)
   assert.equal(d.todayIndex, 1)
-  assert.equal(d.today, 1)
+  assert.equal(d.today, 1) // 10/8 に登録した1件
   assert.equal(d.byImportance.get('imp-a'), 1)
   assert.deepEqual(
     d.byMember.map((m) => [m.member, m.count]),
     [
-      ['田中', 3],
+      ['田中', 4], // 登録者別も累計（会期前の1件を含む）
       ['佐藤', 1],
     ],
   )
 })
 
-test('会期外の日は、今日の件数を 0 にする', () => {
-  const d = buildDashboard([], ex, new Date(2026, 9, 20).getTime())
+test('今日の件数は、会期外の日でも、今日登録した件数を数える', () => {
+  const leads = [lead('1', new Date(2026, 9, 20, 9, 0)), lead('2', new Date(2026, 9, 20, 23, 59)), lead('3', new Date(2026, 9, 19, 12, 0))]
+  const d = buildDashboard(leads, ex, new Date(2026, 9, 20, 15).getTime())
   assert.equal(d.todayIndex, null)
-  assert.equal(d.today, 0)
+  assert.equal(d.today, 2)
+  assert.equal(d.total, 3)
+  assert.equal(d.inPeriod, 0)
 })
 
 test('メールアドレス・氏名と会社名が同じリードを、重複の可能性として見つける', () => {

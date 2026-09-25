@@ -12,10 +12,12 @@ export interface HourRow {
 }
 
 export interface Dashboard {
-  /** 会期中の件数 */
+  /** 累計（この展示会のリードの全件数。会期の前後に登録したものも含む） */
   total: number
-  /** 今日の件数 */
+  /** 今日（端末の今日の 0時から今まで）に登録した件数。会期中かどうかは問わない */
   today: number
+  /** 会期中の件数（時間帯別のグラフの対象） */
+  inPeriod: number
   /** 今日が会期の何日目か（会期外なら null） */
   todayIndex: number | null
   /** 時間帯 × 日 の件数 */
@@ -24,9 +26,9 @@ export interface Dashboard {
   perDay: number[]
   /** 会期中だが、開場時間の外の件数 */
   outside: number
-  /** 重要度 ID → 件数（未選択は ''） */
+  /** 重要度 ID → 件数（累計。未選択は ''） */
   byImportance: Map<string, number>
-  /** 登録者（端末 ID）→ 名前と件数 */
+  /** 登録者（端末 ID）→ 名前と件数（累計） */
   byMember: { deviceId: string; member: string; device: string; count: number }[]
 }
 
@@ -53,19 +55,29 @@ export function buildDashboard(leads: Lead[], ex: Exhibition, now = Date.now()):
     return -1
   }
 
+  const todayStart = new Date(now)
+  todayStart.setHours(0, 0, 0, 0)
+  const tomorrowStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), todayStart.getDate() + 1).getTime()
+  let today = 0
+  let inPeriod = 0
+
   for (const l of leads) {
     if (!belongsTo(l, ex)) continue
     const at = l.metAt || l.createdAt
-    const d = dayIndexOf(at)
-    if (d < 0) continue
+    // 累計・重要度別・登録者別は、この展示会のリードすべて
     total++
-    perDay[d]++
+    if (at >= todayStart.getTime() && at < tomorrowStart) today++
     byImportance.set(l.importance, (byImportance.get(l.importance) ?? 0) + 1)
     const m = members.get(l.createdBy.deviceId) ?? { ...l.createdBy, count: 0 }
     m.count++
     // 登録者名は、新しいリードに付いている名前を使う（途中で名前を変えた場合）
     if (l.createdBy.member) m.member = l.createdBy.member
     members.set(l.createdBy.deviceId, m)
+    // 時間帯別のグラフは、会期中のものだけ
+    const d = dayIndexOf(at)
+    if (d < 0) continue
+    inPeriod++
+    perDay[d]++
     const hour = new Date(at).getHours()
     const row = rows.find((r) => r.hour === hour)
     if (row) row[`day${d}`]++
@@ -75,7 +87,8 @@ export function buildDashboard(leads: Lead[], ex: Exhibition, now = Date.now()):
   const todayIndex = dayIndexOf(now)
   return {
     total,
-    today: todayIndex >= 0 ? perDay[todayIndex] : 0,
+    today,
+    inPeriod,
     todayIndex: todayIndex >= 0 ? todayIndex : null,
     rows,
     perDay,

@@ -77,11 +77,8 @@ function Dashboard({ leads, ex, importance }: { leads: Lead[]; ex: Exhibition; i
             <span className="unit"> {t('dash.unit')}</span>
           </span>
         </div>
-        <div className={`kpi kpi-today${d.todayIndex === null ? ' kpi-off' : ''}`}>
-          <span className="kpi-label">
-            {t('dash.today')}
-            {d.todayIndex !== null ? `（${t('dash.dayN', { n: d.todayIndex + 1 })}）` : `（${t('dash.notInPeriod')}）`}
-          </span>
+        <div className="kpi kpi-today">
+          <span className="kpi-label">{t('dash.today')}</span>
           <span className="big">
             {d.today}
             <span className="unit"> {t('dash.unit')}</span>
@@ -90,7 +87,7 @@ function Dashboard({ leads, ex, importance }: { leads: Lead[]; ex: Exhibition; i
       </div>
 
       <h3 className="chart-title">{t('chart.title')}</h3>
-      {d.total === 0 ? (
+      {d.inPeriod === 0 ? (
         <p className="muted">{t('chart.empty')}</p>
       ) : (
         <Suspense fallback={<div className="chart-loading" aria-busy="true" />}>
