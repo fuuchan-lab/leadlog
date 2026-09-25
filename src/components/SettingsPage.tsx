@@ -65,6 +65,17 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn }: Prop
 
   return (
     <>
+      <a className="card help-card" href={`./help.html#${lang}`} target="_blank" rel="noopener">
+        <span className="help-mark" aria-hidden="true">
+          ?
+        </span>
+        <span>
+          <strong>{t('help.title')}</strong>
+          <br />
+          <span className="muted small">{t('help.subtitle')}</span>
+        </span>
+      </a>
+
       <ExhibitionCard shared={shared} leads={leads} />
 
       <section className="card">

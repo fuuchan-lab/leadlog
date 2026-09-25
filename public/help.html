@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ヘルプ / Help — リードログ</title>
+    <link rel="icon" href="./favicon.ico" sizes="48x48" />
+    <style>
+      :root {
+        --bg: #f4f6fb;
+        --card: #ffffff;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+        --accent: #1d4ed8;
+        --tip-bg: #ecfdf5;
+        --tip-text: #065f46;
+        --note-bg: #fef9c3;
+        --note-text: #854d0e;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f172a;
+          --card: #1e293b;
+          --text: #e5e7eb;
+          --muted: #94a3b8;
+          --border: #334155;
+          --accent: #93c5fd;
+          --tip-bg: #052e16;
+          --tip-text: #bbf7d0;
+          --note-bg: #422006;
+          --note-text: #fde68a;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+        line-height: 1.75;
+        overflow-wrap: anywhere;
+      }
+      main { max-width: 760px; margin: 0 auto; padding: 20px 16px 64px; }
+      header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+      header img { width: 56px; height: 56px; border-radius: 14px; }
+      h1 { font-size: 1.5rem; margin: 0; line-height: 1.3; }
+      .lang-switch { margin: 8px 0 16px; font-size: 0.95rem; }
+      .lang-switch a { color: var(--accent); }
+      nav.toc, section {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 6px 18px 14px;
+        margin-bottom: 16px;
+      }
+      nav.toc ol { padding-left: 1.4em; margin: 6px 0; }
+      nav.toc a, section a { color: var(--accent); }
+      h2 { font-size: 1.2rem; margin: 14px 0 6px; }
+      h3 { font-size: 1rem; margin: 14px 0 4px; }
+      p, li { margin: 4px 0; }
+      ul, ol { padding-left: 1.4em; }
+      .tip, .note { border-radius: 10px; padding: 8px 12px; margin: 10px 0; }
+      .tip { background: var(--tip-bg); color: var(--tip-text); }
+      .note { background: var(--note-bg); color: var(--note-text); }
+      kbd {
+        display: inline-block;
+        padding: 0 6px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--bg);
+        font: inherit;
+        font-size: 0.9em;
+        white-space: nowrap;
+      }
+      table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+      th, td { border: 1px solid var(--border); padding: 4px 8px; text-align: left; vertical-align: top; }
+      .en { margin-top: 40px; }
+      .back { display: inline-block; margin-top: 8px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div id="ja" lang="ja">
+        <header>
+          <img src="./icon-192.png" alt="" />
+          <div>
+            <div style="color: var(--muted); font-size: 0.85rem">展示会リード記録簿</div>
+            <h1>リードログ ヘルプ</h1>
+          </div>
+        </header>
+        <p class="lang-switch">English: <a href="#en">Help in English</a></p>
+
+        <nav class="toc" aria-label="目次">
+          <h2>目次</h2>
+          <ol>
+            <li><a href="#ja-start">はじめに（最初の準備）</a></li>
+            <li><a href="#ja-scan">名刺・バッジを登録する</a></li>
+            <li><a href="#ja-list">登録したリードを見る・直す</a></li>
+            <li><a href="#ja-dash">ダッシュボードの見方</a></li>
+            <li><a href="#ja-team">複数人で使う（共有・同期・オフライン）</a></li>
+            <li><a href="#ja-show">展示会を切り替える・コピーする</a></li>
+            <li><a href="#ja-excel">Excel に書き出す</a></li>
+            <li><a href="#ja-howto">活用のコツ（展示会の前・会期中・後）</a></li>
+            <li><a href="#ja-trouble">困ったとき</a></li>
+          </ol>
+        </nav>
+
+        <section id="ja-start">
+          <h2>1. はじめに（最初の準備）</h2>
+          <h3>① アプリを開く・ホーム画面に置く</h3>
+          <p>
+            スマホのブラウザ（iPhone は Safari、Android は Chrome）で
+            <a href="https://leadlog.doitmyself.net/">https://leadlog.doitmyself.net/</a> を開きます。
+            iPhone は共有ボタン →「ホーム画面に追加」、Android はメニュー →「ホーム画面に追加」（アプリをインストール）で、アプリと同じように使えます。
+          </p>
+          <h3>② 登録者名を入れる</h3>
+          <p>最初に「この端末で登録する人」に名前（例: 田中）を入れます。だれが登録したかをリードに記録するためです。あとで <kbd>⚙ 設定</kbd> →「この端末」で変えられます。</p>
+          <h3>③ Google にログインする</h3>
+          <p>
+            右上の <kbd>ログイン</kbd> を押し、<strong>会社の共有 Google アカウント</strong>でログインします。
+            確認画面では「Google ドライブのファイル…」にチェックを入れて「続行」を押してください。
+            ログインできると、ボタンの縁が<strong>緑色にふわっと光ります</strong>（オンラインで同期できる状態）。
+          </p>
+          <h3>④ 展示会を作る</h3>
+          <p><kbd>⚙ 設定</kbd> →「展示会」→ <kbd>＋ 新しい展示会</kbd> で、次を入れて <kbd>作成して開く</kbd> を押します。</p>
+          <ul>
+            <li>展示会名・会場・ブース</li>
+            <li>開催日：1行の欄を押してカレンダーを開き、<strong>初日 → 最終日</strong>の順にタップ</li>
+            <li>開場時間：時刻の列で<strong>開始 → 終了</strong>の順にタップ</li>
+            <li>展示会ロゴ：アルバムから選ぶと、ダッシュボードと Excel の右上に小さく出ます</li>
+          </ul>
+          <h3>⑤ 分類を自分たちに合わせる（任意）</h3>
+          <p>設定で、次のリストの名前・色・並び順を変えられます（全員で共有）。</p>
+          <ul>
+            <li><strong>重要度</strong>（初期は A〜E。例: Very High / High / Middle / Low に変えてもよい）</li>
+            <li><strong>顧客の種類</strong>（既存顧客・新規見込み など）</li>
+            <li><strong>興味のある分野</strong>（出展している製品・メーカーなど。Excel では分野ごとに 0/1 の列になる）</li>
+            <li><strong>次のアクション</strong>（電話・メール、見積、カタログ送付 など）</li>
+          </ul>
+          <h3>⑥ OCR のデータを先にダウンロードする</h3>
+          <p>
+            文字の読み取りには、初回だけ数十MBのデータが必要です。展示会場は電波が弱いことが多いので、
+            <strong>Wi-Fi のある場所で</strong> 設定 →「OCRの準備（オフライン用）」を押しておきましょう。
+          </p>
+        </section>
+
+        <section id="ja-scan">
+          <h2>2. 名刺・バッジを登録する</h2>
+          <ol>
+            <li><kbd>📷 撮影する</kbd>（またはアルバムから <kbd>🖼 画像を選ぶ</kbd>）を押して、名刺・展示会バッジを撮ります。</li>
+            <li>「範囲を合わせる」画面で、黄色い枠の<strong>四隅の丸をドラッグ</strong>して名刺の角に合わせます。向きが違うときは <kbd>↻ 回転</kbd>。写真が悪いときは <kbd>📷 再撮影</kbd>。</li>
+            <li><kbd>この範囲で読み取る</kbd> を押すと、書類のように補正して文字を読み取り、氏名・会社名・部署・役職・都道府県・市区町村・電話・メールを入れます。</li>
+            <li>内容を<strong>確認・修正</strong>し、重要度・顧客の種類・興味のある分野・メモ・次のアクションを選んで <kbd>リードを保存</kbd>。</li>
+          </ol>
+          <p>来場日時と担当者（受付）は自動で記録されます。あとで一覧の「編集」から直せます。名刺がない方は <kbd>✏️ 手入力</kbd> で登録できます。</p>
+          <div class="tip">
+            <strong>きれいに読み取るコツ</strong>
+            <ul>
+              <li><strong>名刺と色の違う、無地の場所に置く</strong>（白い名刺なら、濃い色の机やノートの上）。</li>
+              <li>できるだけ<strong>真上から</strong>、名刺が画面の半分以上になるように撮る。</li>
+              <li>明るい場所で、<strong>影や光の反射</strong>が名刺にかからないようにする。</li>
+              <li>ピントが合ってから撮る（文字がぼやけると読み取れません）。</li>
+              <li>縦書きの名刺は、<kbd>↻ 回転</kbd>で横向きにしてから読み取る。</li>
+            </ul>
+          </div>
+          <div class="note">読み取りは完全ではありません。特に氏名は、保存する前に必ず確認してください。「読み取った文字を見る」で OCR の結果全体も確認できます。</div>
+          <p>同じ方（同じメールアドレス、または同じ氏名と会社名）がすでに登録されていると、「同じ方のリードがすでにあります」と表示されます。</p>
+        </section>
+
+        <section id="ja-list">
+          <h2>3. 登録したリードを見る・直す</h2>
+          <ul>
+            <li>一覧は、はじめは<strong>開いている展示会</strong>のリードだけを表示します。<kbd>すべての展示会</kbd>で全部を表示します。</li>
+            <li>検索欄で、氏名・会社・メモ・登録者などから探せます。重要度のボタンで絞り込めます。</li>
+            <li>リードを押すと、全項目と名刺の画像が見られます。電話番号・メールアドレスは押すと電話・メールができます。</li>
+            <li><kbd>編集</kbd>で内容を直せます（来場日時・担当者も）。<kbd>削除</kbd>すると、ほかの端末からも消えます。</li>
+            <li>「重複の可能性」と出たリードは、どちらかを残して整理してください（自動では消しません）。</li>
+          </ul>
+        </section>
+
+        <section id="ja-dash">
+          <h2>4. ダッシュボードの見方</h2>
+          <table>
+            <tr><th>累計</th><td>開いている展示会で登録したリードの全件数</td></tr>
+            <tr><th>今日</th><td>今日（0時から今まで）に登録した件数</td></tr>
+            <tr><th>時間帯別の棒グラフ</th><td>会期の各日の、開場時間の1時間ごとの件数。今日の棒は濃く表示</td></tr>
+            <tr><th>重要度別・登録者別</th><td>だれが何件、どの重要度のリードを取ったか</td></tr>
+          </table>
+          <p>ほかの人が登録したリードも、同期されると自動で反映されます（画面を開いている間は約1分ごと）。</p>
+        </section>
+
+        <section id="ja-team">
+          <h2>5. 複数人で使う（共有・同期・オフライン）</h2>
+          <ul>
+            <li>同じ Google アカウントでログインした端末（<strong>最大10台</strong>）のリードは、Google ドライブの「LeadLog」フォルダーに集約されます。</li>
+            <li>だれが登録したかは、登録者名と端末 ID で区別されます。</li>
+            <li><strong>電波がないとき</strong>も登録できます。リードは端末に一時保存され、オンラインに戻ると自動で同期されます。二重に登録されることはありません。</li>
+            <li>ログインボタンの <strong>オレンジの数字</strong>は、まだ同期していない件数です。ボタンを押すと「今すぐ同期」もできます。</li>
+            <li>10台を超えると、新しい端末は同期できません。設定 →「登録済みの端末」で、使わなくなった端末を<kbd>解除</kbd>してください。</li>
+          </ul>
+        </section>
+
+        <section id="ja-show">
+          <h2>6. 展示会を切り替える・コピーする</h2>
+          <ul>
+            <li>設定 →「展示会」→ <kbd>📂 既存の展示会を開く</kbd> で、過去の展示会を開けます。どれを開くかは<strong>端末ごと</strong>なので、ブースで登録中のほかの端末には影響しません。</li>
+            <li><kbd>📋 コピーして新規作成</kbd> で、会場・開場時間・ロゴを引き継いで新しい展示会を作れます（リードはコピーされません）。毎年出展する展示会に便利です。</li>
+          </ul>
+        </section>
+
+        <section id="ja-excel">
+          <h2>7. Excel に書き出す</h2>
+          <p>設定 →「Excelに書き出す」で、<kbd>Google ドライブに保存</kbd> または <kbd>この端末にダウンロード</kbd>。範囲は「開いている展示会のみ」か「すべてのリード」を選べます。</p>
+          <ul>
+            <li>1行目に展示会名（右上に展示会ロゴ）、黄色の見出し（日本語と英語の2段）。</li>
+            <li>会社・氏名・部署・役職・都道府県・市区町村・電話・メール・来場日・時間・受付・優先度・顧客の種類・興味のある分野（0/1）・次のアクション・担当・メモ。</li>
+            <li>右側に、登録日時・登録端末・更新・重複の可能性・読み取った文字（確認用）。</li>
+            <li>「時間帯別」シートに、時間帯 × 日の件数の表。</li>
+          </ul>
+        </section>
+
+        <section id="ja-howto">
+          <h2>8. 活用のコツ</h2>
+          <h3>展示会の前</h3>
+          <ul>
+            <li>展示会を作り、ロゴ・会場・日程・開場時間を入れる（前回の展示会をコピーすると早い）。</li>
+            <li>「興味のある分野」に、ブースで紹介する製品・メーカーを登録しておく。</li>
+            <li>重要度の基準を全員で決めておく（例: A = 具体的な案件あり・予算あり、B = 検討中 …）。</li>
+            <li>全員の端末で、登録者名の入力・ログイン・OCR の準備を済ませる。</li>
+          </ul>
+          <h3>会期中</h3>
+          <ul>
+            <li>話した直後に、その場で登録する（時間がたつと内容を忘れます）。</li>
+            <li>メモは <strong>BANT</strong>（Budget 予算・Authority 決裁者・Needs ニーズ・Timeframe 導入時期）を意識して書く。</li>
+            <li>重要度の高い方には、<strong>次のアクション</strong>（担当・期日）をその場で入れる。</li>
+            <li>ダッシュボードで、時間帯ごとの来場の波や、担当者ごとの件数を見て、人の配置を調整する。</li>
+            <li>名刺がない方（バッジだけ・名刺切れ）は、バッジを撮るか手入力で。</li>
+          </ul>
+          <h3>会期の後</h3>
+          <ul>
+            <li>Excel に書き出して、重要度の高い順にフォローする。</li>
+            <li>「重複の可能性」を整理する。</li>
+            <li>「次のアクション」の担当・期日で、フォローの抜け漏れを防ぐ。</li>
+            <li>時間帯別の表で、次回の人員配置や休憩時間を考える。</li>
+          </ul>
+        </section>
+
+        <section id="ja-trouble">
+          <h2>9. 困ったとき</h2>
+          <h3>ログインできない</h3>
+          <ul>
+            <li>LINE などのアプリの中で開いている場合は、Safari / Chrome で直接開いてください。</li>
+            <li>「このアプリは Google で確認されていません」と出る場合や、ログインできないアカウントがある場合は、管理者に、そのアカウントを「テストユーザー」に追加してもらってください。</li>
+            <li>確認画面で「Google ドライブのファイル…」にチェックが入っているか確認してください。</li>
+          </ul>
+          <h3>読み取りがおかしい</h3>
+          <ul>
+            <li>四隅がずれていたら、丸をドラッグして直してから読み取ります。</li>
+            <li>写真がぶれている・暗いときは <kbd>📷 再撮影</kbd>。上の「きれいに読み取るコツ」も参考に。</li>
+            <li>読み取れなかった項目は、手で入力してください。</li>
+          </ul>
+          <h3>同期されない・ほかの人のリードが出ない</h3>
+          <ul>
+            <li>ログインボタンの縁が緑に光っているか（オンラインでログイン中か）確認してください。</li>
+            <li>ログインボタン → <kbd>今すぐ同期</kbd>。全員が同じ Google アカウントでログインしているかも確認してください。</li>
+            <li>開いている展示会が違うと、一覧に出ません（一覧の <kbd>すべての展示会</kbd>で確認）。</li>
+          </ul>
+          <h3>データについて</h3>
+          <p>
+            データは、端末と、ログインした Google アカウントの Google ドライブにだけ保存されます。詳しくは
+            <a href="./privacy.html">プライバシーポリシー</a>をご覧ください。
+          </p>
+        </section>
+        <a class="back" href="./">← アプリに戻る</a>
+      </div>
+
+      <div id="en" class="en" lang="en">
+        <header>
+          <img src="./icon-192.png" alt="" />
+          <div>
+            <div style="color: var(--muted); font-size: 0.85rem">Exhibition Lead Manager</div>
+            <h1>LeadLog Help</h1>
+          </div>
+        </header>
+        <p class="lang-switch">日本語: <a href="#ja">日本語のヘルプ</a></p>
+
+        <section>
+          <h2>1. Getting started</h2>
+          <ol>
+            <li>Open <a href="https://leadlog.doitmyself.net/">https://leadlog.doitmyself.net/</a> in Safari (iPhone) or Chrome (Android) and add it to your home screen.</li>
+            <li>Enter your name under "Who is using this device" so each lead records who added it.</li>
+            <li>Tap <kbd>Log in</kbd> and sign in with the <strong>shared company Google account</strong>. Check "Google Drive files…" on the consent screen. When logged in and online, the button's border glows green.</li>
+            <li><kbd>⚙ Settings</kbd> → Trade show → <kbd>＋ New show</kbd>: enter the name, venue, dates (tap the first and last day on the calendar), opening hours (tap start and end) and optionally a logo.</li>
+            <li>Customize priority, customer types, areas of interest and next steps in Settings (shared with everyone).</li>
+            <li>On Wi-Fi, tap "Prepare OCR (for offline use)" so text can be read on a weak show-floor connection.</li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>2. Adding a lead</h2>
+          <ol>
+            <li>Tap <kbd>📷 Take photo</kbd> (or <kbd>🖼 Choose image</kbd>) and photograph the business card or badge.</li>
+            <li>Drag the corner dots onto the card corners. Use <kbd>↻ Rotate</kbd> if needed, or <kbd>📷 Retake</kbd>.</li>
+            <li>Tap <kbd>Read this area</kbd>. The card is squared up and the fields are filled in.</li>
+            <li><strong>Check and correct</strong> the fields (especially the name), choose priority, type, interests, notes and next steps, then <kbd>Save lead</kbd>.</li>
+          </ol>
+          <div class="tip">
+            <strong>Tips for good results:</strong> place the card on a plain surface of a different color, shoot from directly above with the card filling at least half the frame, avoid shadows and glare, and make sure it is in focus.
+          </div>
+          <p>The date/time and staff are recorded automatically and can be corrected later with <kbd>Edit</kbd>.</p>
+        </section>
+
+        <section>
+          <h2>3. Working as a team</h2>
+          <ul>
+            <li>Up to <strong>10 devices</strong> logged in to the same account share their leads in the "LeadLog" folder in Google Drive.</li>
+            <li>Works <strong>offline</strong>: leads are kept on the device and sync automatically when you are back online, without duplicates.</li>
+            <li>The orange number on the login button is the number of unsynced leads.</li>
+            <li>Each device chooses which show is open; opening a past show on one device does not affect the others.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>4. Dashboard and export</h2>
+          <ul>
+            <li><strong>Total</strong>: all leads of the open show. <strong>Today</strong>: leads added today. The bar chart shows leads per hour on each show day.</li>
+            <li>Settings → Export to Excel: save to Google Drive or download. The sheet has the show title and logo, bilingual headers, priority, interest columns (0/1), next steps and notes.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>5. Making the most of it</h2>
+          <ul>
+            <li><strong>Before the show</strong>: create the show (copy last year's), register the products you exhibit as areas of interest, agree on what each priority level means.</li>
+            <li><strong>During the show</strong>: add each lead right after the conversation, write notes with <strong>BANT</strong> (Budget, Authority, Needs, Timeframe), set next steps with an owner and due date for hot leads, and use the dashboard to adjust staffing.</li>
+            <li><strong>After the show</strong>: export to Excel, follow up by priority, clean up possible duplicates, and track next steps.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>6. Troubleshooting</h2>
+          <ul>
+            <li>Cannot log in: open the page directly in Safari/Chrome (not inside another app), and ask the administrator to add your account as a test user.</li>
+            <li>Wrong corners or text: drag the corners, retake the photo, or type the fields in.</li>
+            <li>Leads from others not showing: check that the button glows green, tap <kbd>Sync now</kbd>, and check the open show (use <kbd>All shows</kbd> in the list).</li>
+            <li>Data is stored only on your devices and in your Google Drive. See the <a href="./privacy.html">Privacy Policy</a>.</li>
+          </ul>
+        </section>
+        <a class="back" href="./">← Back to the app</a>
+      </div>
+    </main>
+  </body>
+</html>

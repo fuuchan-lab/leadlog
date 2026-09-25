@@ -145,6 +145,9 @@ export const ja = {
   'popup.photoMissing': '画像はまだこの端末にありません（ログインしてオンラインになると表示されます）。',
 
   // 設定
+  'help.open': 'ヘルプ（使い方）を開く',
+  'help.title': 'ヘルプ・使い方',
+  'help.subtitle': '最初の準備、名刺の登録、複数人での使い方、Excel 出力、活用のコツ',
   'settings.language': '言語 / Language',
   'settings.theme': '画面の配色',
   'settings.theme.auto': '自動（端末の設定に合わせる）',
@@ -394,6 +397,9 @@ export const en: Record<MessageKey, string> = {
   'popup.photoLoading': 'Loading image…',
   'popup.photoMissing': 'The image is not on this device yet (it appears once you are logged in and online).',
 
+  'help.open': 'Open help',
+  'help.title': 'Help & how to use',
+  'help.subtitle': 'Getting started, adding leads, team use, Excel export, tips',
   'settings.language': '言語 / Language',
   'settings.theme': 'Appearance',
   'settings.theme.auto': 'Auto (follow device)',

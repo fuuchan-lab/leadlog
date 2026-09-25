@@ -20,7 +20,7 @@ interface Props {
 
 /** アプリ名・設定ボタン・Googleログインボタン（CapLog と同じ並び） */
 export function Header({ view, onToggleSettings, auth, sync, unsyncedCount }: Props) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const { account, connecting, login } = auth
   const [accountOpen, setAccountOpen] = useState(false)
   const online = useOnline()
@@ -45,9 +45,22 @@ export function Header({ view, onToggleSettings, auth, sync, unsyncedCount }: Pr
               <GearIcon />
             </button>
           ) : (
-            <button className="back-button" onClick={onToggleSettings}>
-              {t('header.back')}
-            </button>
+            <>
+              {/* 設定の画面では、使い方のヘルプを開くアイコン */}
+              <a
+                className="icon-button help-button"
+                href={`./help.html#${lang}`}
+                target="_blank"
+                rel="noopener"
+                aria-label={t('help.open')}
+                title={t('help.open')}
+              >
+                ?
+              </a>
+              <button className="back-button" onClick={onToggleSettings}>
+                {t('header.back')}
+              </button>
+            </>
           )}
           <button
             className={`google-button${live ? ' google-button-live' : ''}`}
