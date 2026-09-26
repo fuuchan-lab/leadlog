@@ -36,7 +36,7 @@ export default defineConfig({
         // help.html・privacy.html は SPA ではない単独のページ。指定しないと、オフライン対応の仕組みが
         // これらへの移動もすべてアプリ本体（index.html）に差し替えてしまい、ヘルプが開けなくなる。
         // 照合はパス＋クエリ（?lang=ja など）に対して行われるので、クエリ付きも除外する
-        navigateFallbackDenylist: [/\/help\.html(\?.*)?$/, /\/privacy\.html(\?.*)?$/],
+        navigateFallbackDenylist: [/\/help\.html(\?.*)?$/, /\/privacy\.html(\?.*)?$/, /\/\.well-known\//],
         // OCR の部品（tesseract.js の worker・wasm・言語データ）は CDN から読み込む。
         // 一度読み込んだら端末に保存し、電波のない展示会場でも読み取れるようにする
         runtimeCaching: [

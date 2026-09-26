@@ -22,3 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Android (TWA) package: build outputs and signing keys never go to Git
+android/.gradle/
+android/build/
+android/app/build/
+android/*.aab
+android/*.apk
+android/*.idsig
+android/local.properties
+*.keystore
+*.jks

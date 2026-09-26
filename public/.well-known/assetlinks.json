@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "net.doitmyself.leadlog",
+      "sha256_cert_fingerprints": [
+        "87:7D:AA:12:A6:9B:09:BA:97:80:48:6D:86:67:CC:96:87:DB:34:2B:17:8E:A6:EC:B2:88:B7:10:F7:BD:F5:53"
+      ]
+    }
+  }
+]
