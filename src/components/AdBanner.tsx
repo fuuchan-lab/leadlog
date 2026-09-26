@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { ADSENSE_CLIENT, ADSENSE_SLOT } from '../adsense.ts'
+import { ADSENSE_CLIENT, ADSENSE_SLOT, isAndroidApp } from '../adsense.ts'
 
 declare global {
   interface Window {
@@ -7,9 +7,9 @@ declare global {
   }
 }
 
-const enabled = ADSENSE_CLIENT !== '' && ADSENSE_SLOT !== ''
+const enabled = ADSENSE_CLIENT !== '' && ADSENSE_SLOT !== '' && !isAndroidApp()
 
-/** 画面の下に置く AdSense の広告。ID が入っていない間は何も表示しない */
+/** 画面の下に置く AdSense の広告。ID が入っていない間と、Android アプリ（TWA）の中では何も表示しない */
 export function AdBanner() {
   const requested = useRef(false)
 
