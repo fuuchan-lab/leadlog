@@ -31,7 +31,7 @@ export function Header({ view, onToggleSettings, auth, sync, unsyncedCount }: Pr
 
   return (
     <>
-      <header className="topbar">
+      <header className={`topbar${view === 'settings' ? ' topbar-settings' : ''}`}>
         <div className="brand">
           <img className="brand-logo" src="./icon-192.png" alt="" />
           <div className="brand-text">

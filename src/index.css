@@ -349,6 +349,17 @@ button.link.move-button {
   min-width: 0;
 }
 
+/* 設定の画面は右側のボタンが3つ（ヘルプ・戻る・ログイン）並ぶ。狭い画面ではアプリ名の下の段に回し、名前が切れないようにする */
+@media (max-width: 440px) {
+  .topbar-settings {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .topbar-settings .topbar-actions {
+    justify-content: flex-end;
+  }
+}
+
 .topbar-actions {
   display: flex;
   align-items: center;
