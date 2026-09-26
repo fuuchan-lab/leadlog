@@ -18,6 +18,8 @@ export const LEAD_FILE_RE = /^leads-([a-z0-9]{8})\.json$/
 
 export const leadFileName = (deviceId: string) => `leads-${deviceId}.json`
 export const photoFileName = (id: string) => `card-${id}.jpg`
+/** 展示会ごとの書き出し（エクスポート）フォルダー・ZIPに入れる、読み込み用のデータファイル */
+export const PACKAGE_DATA_FILE = 'leadlog-data.json'
 
 export function toRemote(l: Lead): RemoteLead {
   const { synced: _synced, ...rest } = l

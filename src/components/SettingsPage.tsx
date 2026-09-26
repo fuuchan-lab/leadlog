@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { describeDevice, getDeviceId } from '../device.ts'
-import { driveConfig } from '../drive.ts'
+import { describeError } from '../errors.ts'
+import { driveConfig, ensureFolder, listSubfolders, type DriveFolder } from '../drive.ts'
 import type { SharedSettingsState } from '../hooks/useSharedSettings.ts'
 import type { Lang } from '../i18n/context.ts'
 import { useI18n } from '../i18n/useI18n.ts'
+import { ImportDataMissingError, importFromDriveFolder, importFromZip, type ImportResult } from '../importPackage.ts'
 import { isOcrReady, prepareOcr } from '../scan/ocr.ts'
 import { belongsTo } from '../exhibitions.ts'
 import { useLeaveGuard } from '../leaveGuard.ts'
@@ -23,17 +25,27 @@ interface Props {
   loggedIn: boolean
   /** 「既存の展示会を開く」で展示会を開いた後、ホームの画面に戻る */
   onExhibitionOpened: () => void
+  /** 読み込んだリードを、この端末の一覧に反映する */
+  onImported: () => Promise<void>
 }
 
 type ExportState =
   | { status: 'idle' }
   | { status: 'busy' }
-  | { status: 'done'; name: string; id?: string }
-  | { status: 'error' }
+  | { status: 'done'; name: string; id?: string; isFolder?: boolean }
+  | { status: 'error'; detail?: string }
+
+type ImportState =
+  | { status: 'idle' }
+  | { status: 'loadingFolders' }
+  | { status: 'pickFolder'; folders: DriveFolder[] }
+  | { status: 'busy' }
+  | { status: 'done'; result: ImportResult }
+  | { status: 'error'; missing?: boolean; detail?: string }
 
 type OcrState = { status: 'idle' | 'ready' | 'error' } | { status: 'busy'; p: number }
 
-export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhibitionOpened }: Props) {
+export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhibitionOpened, onImported }: Props) {
   const { t, lang, setLang } = useI18n()
   const [theme, setTheme] = useState<ThemePreference>(loadTheme)
   const [memberDraft, setMemberDraft] = useState(member)
@@ -43,6 +55,9 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhi
   const [exp, setExp] = useState<ExportState>({ status: 'idle' })
   const [scope, setScope] = useState<'all' | 'exhibition'>('exhibition')
   const [ocr, setOcr] = useState<OcrState>({ status: isOcrReady() ? 'ready' : 'idle' })
+  const [imp, setImp] = useState<ImportState>({ status: 'idle' })
+  const [pickedFolder, setPickedFolder] = useState('')
+  const zipInputRef = useRef<HTMLInputElement>(null)
 
   const changeTheme = (next: ThemePreference) => {
     setTheme(next)
@@ -64,8 +79,36 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhi
       setExp({ status: 'done', ...(await run(targets, shared.settings, onlyCurrent ? current : null, t, lang)) })
     } catch (e) {
       console.error('[export]', e)
-      setExp({ status: 'error' })
+      setExp({ status: 'error', detail: describeError(e) })
     }
+  }
+
+  const finishImport = async (run: () => Promise<ImportResult>) => {
+    setImp({ status: 'busy' })
+    try {
+      const result = await run()
+      setImp({ status: 'done', result })
+      await onImported()
+    } catch (e) {
+      console.error('[import]', e)
+      setImp({ status: 'error', missing: e instanceof ImportDataMissingError, detail: describeError(e) })
+    }
+  }
+
+  const loadDriveFolders = async () => {
+    setImp({ status: 'loadingFolders' })
+    try {
+      const folders = await listSubfolders(await ensureFolder())
+      setPickedFolder(folders[0]?.id ?? '')
+      setImp({ status: 'pickFolder', folders })
+    } catch (e) {
+      console.error('[import]', e)
+      setImp({ status: 'error', detail: describeError(e) })
+    }
+  }
+
+  const onPickZip = (file: File | undefined) => {
+    if (file) void finishImport(() => importFromZip(file))
   }
 
   return (
@@ -224,7 +267,15 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhi
           <p className="ok" role="status">
             {t('export.done', { name: exp.name })}{' '}
             {exp.id && (
-              <a href={`https://drive.google.com/file/d/${exp.id}/view`} target="_blank" rel="noopener noreferrer">
+              <a
+                href={
+                  exp.isFolder
+                    ? `https://drive.google.com/drive/folders/${exp.id}`
+                    : `https://drive.google.com/file/d/${exp.id}/view`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 {t('export.open')}
               </a>
             )}
@@ -233,6 +284,82 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhi
         {exp.status === 'error' && (
           <p className="error" role="alert">
             {t('export.failed')}
+            {exp.detail && (
+              <>
+                <br />
+                <span className="small muted">
+                  {t('err.detail')}: {exp.detail}
+                </span>
+              </>
+            )}
+          </p>
+        )}
+      </section>
+
+      <section className="card">
+        <h2>{t('import.title')}</h2>
+        <p className="muted small">{t('import.help')}</p>
+        <div className="capture-buttons">
+          <button
+            className="secondary"
+            disabled={!loggedIn || imp.status === 'busy' || imp.status === 'loadingFolders'}
+            onClick={() => void loadDriveFolders()}
+          >
+            {imp.status === 'loadingFolders' ? t('import.busy') : t('import.fromDrive')}
+          </button>
+          <button className="secondary" disabled={imp.status === 'busy'} onClick={() => zipInputRef.current?.click()}>
+            {t('import.fromDevice')}
+          </button>
+        </div>
+        <input
+          ref={zipInputRef}
+          type="file"
+          accept=".zip,application/zip"
+          hidden
+          onChange={(e) => {
+            onPickZip(e.target.files?.[0])
+            e.target.value = ''
+          }}
+        />
+        {!loggedIn && <p className="muted small">{t('import.needLogin')}</p>}
+
+        {imp.status === 'pickFolder' &&
+          (imp.folders.length === 0 ? (
+            <p className="muted small">{t('import.noFolders')}</p>
+          ) : (
+            <label className="field">
+              {t('import.pickFolder')}
+              <div className="two">
+                <select value={pickedFolder} onChange={(e) => setPickedFolder(e.target.value)}>
+                  {imp.folders.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+                <button className="primary" onClick={() => void finishImport(() => importFromDriveFolder(pickedFolder))}>
+                  {t('import.button')}
+                </button>
+              </div>
+            </label>
+          ))}
+        {imp.status === 'busy' && <p className="muted small">{t('import.busy')}</p>}
+        {imp.status === 'done' && (
+          <p className="ok" role="status">
+            {t('import.done', { n: imp.result.imported, withPhoto: imp.result.withPhoto })}
+          </p>
+        )}
+        {imp.status === 'error' && (
+          <p className="error" role="alert">
+            {t(imp.missing ? 'import.noData' : 'import.failed')}
+            {!imp.missing && imp.detail && (
+              <>
+                <br />
+                <span className="small muted">
+                  {t('err.detail')}: {imp.detail}
+                </span>
+              </>
+            )}
           </p>
         )}
       </section>

@@ -242,6 +242,41 @@ export interface DriveFile {
   createdTime: string
 }
 
+/**
+ * 指定した親フォルダーの中に、名前のフォルダーを探す。無ければ作る。
+ * 展示会ごとの書き出し（Excel・名刺画像・JSONデータ）を、1つのフォルダーにまとめるのに使う
+ */
+export async function ensureSubfolder(parentId: string, name: string): Promise<string> {
+  const q = encodeURIComponent(
+    `name='${escapeQuery(name)}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`,
+  )
+  const list = await driveFetch(
+    `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)&orderBy=createdTime&spaces=drive`,
+  )
+  const { files } = (await list.json()) as { files?: { id: string }[] }
+  if (files && files.length > 0) return files[0].id
+  const created = await driveFetch('https://www.googleapis.com/drive/v3/files?fields=id', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, mimeType: 'application/vnd.google-apps.folder', parents: [parentId] }),
+  })
+  return ((await created.json()) as { id: string }).id
+}
+
+export interface DriveFolder {
+  id: string
+  name: string
+}
+
+/** 指定フォルダーの直下にあるサブフォルダー一覧（作った順）。書き出した展示会を選ぶのに使う */
+export async function listSubfolders(parentId: string): Promise<DriveFolder[]> {
+  const q = encodeURIComponent(`'${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`)
+  const data = (await (
+    await driveFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)&orderBy=createdTime desc&spaces=drive`)
+  ).json()) as { files?: DriveFolder[] }
+  return data.files ?? []
+}
+
 /** フォルダー内のファイルを全件取得する */
 export async function listFolderFiles(folderId: string): Promise<DriveFile[]> {
   const q = encodeURIComponent(`'${folderId}' in parents and trashed=false`)

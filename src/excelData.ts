@@ -293,9 +293,26 @@ export function hourlySheet(leads: Lead[], ex: Exhibition, t: TFn): SheetContent
   return { data, columns: [{ width: 14 }, ...d.perDay.map(() => ({ width: 10 })), { width: 10 }], headerRows: 1 }
 }
 
+/** ファイル名・フォルダー名に使えない文字を _ にする */
+export function sanitizeName(name: string): string {
+  return name.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 40)
+}
+
+function timestamp(now: Date): string {
+  return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`
+}
+
 /** 書き出すファイル名。LeadLog_<展示会名>_YYYYMMDD-HHMM.xlsx（ファイル名に使えない文字は _ にする） */
 export function exportFileName(exhibition: string, now: Date): string {
-  const safe = exhibition.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 40)
-  const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`
-  return `LeadLog_${safe ? `${safe}_` : ''}${stamp}.xlsx`
+  const safe = sanitizeName(exhibition)
+  return `LeadLog_${safe ? `${safe}_` : ''}${timestamp(now)}.xlsx`
+}
+
+/**
+ * 展示会ごとの書き出し（Excel・名刺画像・JSONデータ）をまとめるフォルダー名・ZIPファイル名。
+ * 展示会名が無ければ（すべてのリードを書き出す場合など）日時だけにする
+ */
+export function exportPackageName(exhibition: string, now: Date): string {
+  const safe = sanitizeName(exhibition)
+  return safe || timestamp(now)
 }

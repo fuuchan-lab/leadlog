@@ -78,6 +78,7 @@ export default function App() {
             leads={leads}
             loggedIn={auth.account !== null}
             onExhibitionOpened={() => setView('home')}
+            onImported={reload}
           />
         </div>
       ) : (

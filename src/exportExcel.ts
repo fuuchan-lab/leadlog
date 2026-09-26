@@ -1,9 +1,11 @@
 import writeExcelFile from 'write-excel-file/universal'
 import { findDuplicates } from './duplicates.ts'
-import { ensureFolder, uploadFile } from './drive.ts'
-import { exportFileName, hourlySheet, leadsSheet } from './excelData.ts'
+import { ensureFolder, ensureSubfolder, uploadFile } from './drive.ts'
+import { exportFileName, exportPackageName, hourlySheet, leadsSheet } from './excelData.ts'
 import { loadLeadPhoto } from './photos.ts'
 import { fitSize, imageSize } from './scan/logo.ts'
+import { PACKAGE_DATA_FILE, photoFileName, serializeLeads } from './syncMerge.ts'
+import { createZip, type ZipEntry } from './zip.ts'
 import type { Lang, TFn } from './i18n/context.ts'
 import type { Exhibition } from './exhibitions.ts'
 import type { SharedSettings } from './settings.ts'
@@ -23,23 +25,27 @@ export async function buildWorkbook(
   const list = leadsSheet(leads, settings, ex, t, lang, duplicates)
   // 時間帯別のシートは、1つの展示会を書き出す時だけ
   const hourly = ex ? hourlySheet(leads, ex, t) : null
-  // 展示会ロゴを、1行目（展示会名の行）の右上に小さく置く
-  const logo = ex?.logoId ? await loadLeadPhoto(ex.logoId) : null
+  // 展示会ロゴを、1行目（展示会名の行）の右上に小さく置く。壊れた画像などで失敗しても、書き出し自体は続ける
   const images = []
-  if (logo && list.logoColumn) {
-    const size = await imageSize(logo)
-    const { width, height } = fitSize(size.width, size.height, 220, 46)
-    images.push({
-      content: logo,
-      contentType: logo.type || 'image/jpeg',
-      width,
-      height,
-      dpi: 96,
-      anchor: { row: 1, column: list.logoColumn },
-      offsetX: 4,
-      offsetY: 2,
-      title: ex?.name ?? '',
-    })
+  try {
+    const logo = ex?.logoId ? await loadLeadPhoto(ex.logoId) : null
+    if (logo && list.logoColumn) {
+      const size = await imageSize(logo)
+      const { width, height } = fitSize(size.width, size.height, 220, 46)
+      images.push({
+        content: logo,
+        contentType: logo.type || 'image/jpeg',
+        width,
+        height,
+        dpi: 96,
+        anchor: { row: 1, column: list.logoColumn },
+        offsetX: 4,
+        offsetY: 2,
+        title: ex?.name ?? '',
+      })
+    }
+  } catch (e) {
+    console.error('[export-logo]', e)
   }
   return writeExcelFile([
     // 見出しと、No.・会社名・氏名の列を固定する
@@ -57,11 +63,33 @@ export async function buildWorkbook(
 
 export interface ExportResult {
   name: string
-  /** Google ドライブに保存した場合のファイルID（開くリンクに使う） */
+  /** Google ドライブに保存した場合の、開くリンクに使う ID */
   id?: string
+  /** id が、ファイルではなくフォルダーを指しているか */
+  isFolder?: boolean
 }
 
-/** Google ドライブの LeadLog フォルダーに保存する。書き出すたびに、時刻入りの名前の新しいファイルを作る */
+/**
+ * Excel と一緒に、あとで「読み込む」で戻せるように、名刺・バッジの画像とデータ（JSON）も集める。
+ * 削除・ごみ箱のリードは対象外（leads は既にそれらを除いたもの）
+ */
+async function collectPackageFiles(leads: Lead[], workbook: Blob, workbookName: string): Promise<ZipEntry[]> {
+  const files: ZipEntry[] = [
+    { name: workbookName, data: new Uint8Array(await workbook.arrayBuffer()) },
+    { name: PACKAGE_DATA_FILE, data: new TextEncoder().encode(serializeLeads(leads)) },
+  ]
+  for (const l of leads) {
+    if (!l.photoId) continue
+    const photo = await loadLeadPhoto(l.photoId)
+    if (photo) files.push({ name: photoFileName(l.photoId), data: new Uint8Array(await photo.arrayBuffer()) })
+  }
+  return files
+}
+
+/**
+ * Google ドライブに保存する。展示会ごとのフォルダーを作り（無ければ）、その中に Excel・名刺画像・
+ * データ（JSON）をまとめて置く。書き出すたびに、Excel だけ時刻入りの名前で新しく追加する
+ */
 export async function exportToDrive(
   leads: Lead[],
   settings: SharedSettings,
@@ -69,14 +97,25 @@ export async function exportToDrive(
   t: TFn,
   lang: Lang,
 ): Promise<ExportResult> {
-  const blob = await buildWorkbook(leads, settings, ex, t, lang)
+  const workbook = await buildWorkbook(leads, settings, ex, t, lang)
+  const now = new Date()
+  const workbookName = exportFileName(ex?.name ?? '', now)
+  const folderName = exportPackageName(ex?.name ?? '', now)
   const folderId = await ensureFolder()
-  const name = exportFileName(ex?.name ?? '', new Date())
-  const { id } = await uploadFile({ name, mimeType: XLSX_MIME, blob, parentId: folderId })
-  return { name, id }
+  const subId = await ensureSubfolder(folderId, folderName)
+  const files = await collectPackageFiles(leads, workbook, workbookName)
+  for (const f of files) {
+    await uploadFile({
+      name: f.name,
+      mimeType: f.name.endsWith('.json') ? 'application/json' : f.name.endsWith('.jpg') ? 'image/jpeg' : XLSX_MIME,
+      blob: new Blob([f.data.slice()]),
+      parentId: subId,
+    })
+  }
+  return { name: folderName, id: subId, isFolder: true }
 }
 
-/** この端末にダウンロードする（ログインしていない時・オフラインの時にも使える） */
+/** この端末にダウンロードする（ログインしていない時・オフラインの時にも使える）。ZIP に Excel・名刺画像・データをまとめる */
 export async function exportToDevice(
   leads: Lead[],
   settings: SharedSettings,
@@ -84,9 +123,13 @@ export async function exportToDevice(
   t: TFn,
   lang: Lang,
 ): Promise<ExportResult> {
-  const blob = await buildWorkbook(leads, settings, ex, t, lang)
-  const name = exportFileName(ex?.name ?? '', new Date())
-  const url = URL.createObjectURL(blob)
+  const workbook = await buildWorkbook(leads, settings, ex, t, lang)
+  const now = new Date()
+  const workbookName = exportFileName(ex?.name ?? '', now)
+  const files = await collectPackageFiles(leads, workbook, workbookName)
+  const zip = await createZip(files)
+  const name = `${exportPackageName(ex?.name ?? '', now)}.zip`
+  const url = URL.createObjectURL(zip)
   const a = document.createElement('a')
   a.href = url
   a.download = name
