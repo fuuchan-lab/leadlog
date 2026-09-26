@@ -7,6 +7,7 @@ import type { Category } from '../settings.ts'
 import type { Lead, LeadFields, NextStep } from '../types.ts'
 import { CategoryPicker, MultiCategoryPicker } from './CategoryPicker.tsx'
 import { LeadPhoto } from './LeadPhoto.tsx'
+import { MemberField } from './MemberField.tsx'
 import { StickyNoteField } from './StickyNoteField.tsx'
 
 /** 入力で選ぶリスト（設定で全員共通に変えられるもの） */
@@ -154,13 +155,7 @@ export function LeadForm({ value, onChange, lists, member, leads, editingId, pho
               </div>
               <label className="field field-wide">
                 {t('field.staff')}
-                <input
-                  type="text"
-                  list="member-list"
-                  autoComplete="off"
-                  value={value.staff}
-                  onChange={(e) => set('staff', e.target.value)}
-                />
+                <MemberField value={value.staff} onChange={(v) => set('staff', v)} members={lists.members} />
               </label>
             </>
           )}
@@ -222,14 +217,12 @@ export function LeadForm({ value, onChange, lists, member, leads, editingId, pho
                   </label>
                   {step && (
                     <span className="next-step-fields">
-                      <input
-                        type="text"
-                        list="member-list"
-                        autoComplete="off"
-                        aria-label={`${a.label} ${t('field.who')}`}
-                        placeholder={t('field.who')}
+                      <MemberField
                         value={step.who}
-                        onChange={(e) => updateStep(a.id, { who: e.target.value })}
+                        onChange={(v) => updateStep(a.id, { who: v })}
+                        members={lists.members}
+                        ariaLabel={`${a.label} ${t('field.who')}`}
+                        placeholder={t('field.who')}
                       />
                       <input
                         type="date"

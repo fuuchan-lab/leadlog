@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { deletePhoto, getAllLeads, putLead, putPhoto } from '../db.ts'
 import { currentAuthor } from '../device.ts'
+import { renameMemberInLead } from '../leadRename.ts'
 import type { Lead, LeadFields } from '../types.ts'
 
 /** ごみ箱に置いておく日数（過ぎると完全に削除する） */
@@ -134,6 +135,27 @@ export function useLeads() {
     [patchMany],
   )
 
+  /**
+   * 登録者の名前を変えた時に、過去のリード（ごみ箱のものも）の担当者・登録者の名前を新しい名前に置き換える。
+   * 変えたリードは他の端末にも伝わる。変えた件数を返す
+   */
+  const renameMember = useCallback(
+    async (from: string, to: string): Promise<number> => {
+      const now = Date.now()
+      let count = 0
+      for (const lead of await getAllLeads()) {
+        if (lead.deleted) continue
+        const next = renameMemberInLead(lead, from, to, now)
+        if (!next) continue
+        await putLead(next)
+        count++
+      }
+      if (count > 0) await reload()
+      return count
+    },
+    [reload],
+  )
+
   // ごみ箱に入れてから一定の日数がたったリードは、完全に削除する
   useEffect(() => {
     const expired = trash.filter((l) => Date.now() - (l.trashedAt ?? 0) > TRASH_DAYS * 86_400_000)
@@ -141,7 +163,7 @@ export function useLeads() {
     if (expired.length > 0) void purge(expired)
   }, [trash, purge])
 
-  return { leads, trash, unsyncedCount, reload, add, update, moveToTrash, restore, purge, moveTo }
+  return { leads, trash, unsyncedCount, reload, add, update, moveToTrash, restore, purge, moveTo, renameMember }
 }
 
 export type LeadsState = ReturnType<typeof useLeads>

@@ -238,3 +238,31 @@ export function setSettingsDirty(dirty: boolean) {
   }
 }
 
+
+export type RenameResult = { ok: true; list: Category[]; merged: boolean; label: string } | { ok: false; reason: 'empty' }
+
+/**
+ * 登録者の名前を変える。新しい名前がすでに一覧にあれば（大文字・小文字の違いは無視）、エラーにせず、
+ * その項目に統合する（変えた項目は消し、一覧には1つだけ残す）。label は、一覧に残る名前
+ */
+export function renameOrMergeCategory(list: Category[], id: string, rawLabel: string, color: string): RenameResult {
+  const label = rawLabel.trim()
+  if (!label) return { ok: false, reason: 'empty' }
+  const key = label.toLowerCase()
+  const target = visibleCategories(list).find((c) => c.id !== id && c.label.toLowerCase() === key)
+  if (target) {
+    return { ok: true, merged: true, label: target.label, list: list.map((c) => (c.id === id ? { ...c, deleted: true } : c)) }
+  }
+  return { ok: true, merged: false, label, list: list.map((c) => (c.id === id ? { ...c, label, color } : c)) }
+}
+
+/** 同じ名前を、重複なしで1つだけにする（先に出てきたものを残す。大文字・小文字の違いは無視） */
+export function uniqueByLabel(list: Category[]): Category[] {
+  const seen = new Set<string>()
+  return list.filter((c) => {
+    const key = c.label.toLowerCase()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}

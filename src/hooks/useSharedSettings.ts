@@ -7,8 +7,10 @@ import {
   loadSettings,
   moveCategory,
   removeCategory,
+  renameOrMergeCategory,
   saveSettings,
   setSettingsDirty,
+  uniqueByLabel,
   updateCategory,
   visibleCategories,
   type CategoryKind,
@@ -108,15 +110,22 @@ export function useSharedSettings() {
         changeList(kind, (l) => updateCategory(l, id, label, color)),
       remove: (kind: CategoryKind, id: string) => changeList(kind, (l) => removeCategory(l, id)),
       move: (kind: CategoryKind, id: string, direction: -1 | 1) => changeList(kind, (l) => moveCategory(l, id, direction)),
+      /** 登録者の名前を変える。新しい名前がすでに一覧にあれば、その項目に統合する（一覧には1つだけ残る） */
+      renameMember: (id: string, label: string, color: string) => {
+        const result = renameOrMergeCategory(settings.members, id, label, color)
+        if (result.ok) persist({ ...settings, members: result.list, membersUpdatedAt: Date.now() })
+        return result
+      },
     }),
-    [changeList],
+    [changeList, settings, persist],
   )
 
   const importance = useMemo(() => visibleCategories(settings.importance), [settings.importance])
   const customerTypes = useMemo(() => visibleCategories(settings.customerTypes), [settings.customerTypes])
   const interests = useMemo(() => visibleCategories(settings.interests), [settings.interests])
   const nextActions = useMemo(() => visibleCategories(settings.nextActions), [settings.nextActions])
-  const members = useMemo(() => visibleCategories(settings.members), [settings.members])
+  // 同じ名前が2つ以上並ばないよう、表示は重複を1つにまとめる
+  const members = useMemo(() => uniqueByLabel(visibleCategories(settings.members)), [settings.members])
 
   return {
     settings,

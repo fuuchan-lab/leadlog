@@ -23,7 +23,7 @@ export default function App() {
   const [view, setView] = useState<'home' | 'settings'>(() => (location.hash === '#settings' ? 'settings' : 'home'))
   const [member, setMember] = useState(loadMember)
   const [askSave, setAskSave] = useState(false)
-  const { leads, trash, unsyncedCount, reload, add, update, moveToTrash, restore, purge, moveTo } = useLeads()
+  const { leads, trash, unsyncedCount, reload, add, update, moveToTrash, restore, purge, moveTo, renameMember } = useLeads()
   const shared = useSharedSettings()
   const auth = useGoogleAuth()
   const sync = useSync(auth.account !== null, unsyncedCount, shared.dirty, reload, shared.refresh, lang)
@@ -63,7 +63,7 @@ export default function App() {
         </p>
       )}
 
-      {/* 共有アカウントの端末の上限（10台）に達していて、この端末は同期できない */}
+      {/* 共有アカウントの端末の上限（MAX_DEVICES 台）に達していて、この端末は同期できない */}
       {sync.status === 'limit' && (
         <p className="banner banner-warning" role="alert">
           ⚠ {t('sync.deviceLimit', { max: MAX_DEVICES, n: unsyncedCount })}
@@ -80,13 +80,24 @@ export default function App() {
             loggedIn={auth.account !== null}
             onExhibitionOpened={() => setView('home')}
             onImported={reload}
+            onRenameMember={renameMember}
           />
         </div>
       ) : (
         // スマホ（縦長）は1列。PC などの横長の大きい画面では、左にダッシュボードと読み取り、右に一覧の2列
         <div className="home-grid">
           <div className="home-col">
-          {!member && <MemberPrompt onSave={changeMember} />}
+          {!member && (
+            <MemberPrompt
+              members={shared.members}
+              onPick={changeMember}
+              onCreate={(name) => {
+                // 一覧に無い名前は、登録者一覧にも加える（ほかの端末や担当者の入力欄でも選べるように）
+                shared.categories.add('members', name)
+                changeMember(name)
+              }}
+            />
+          )}
           <StatusCard
             leads={leads}
             exhibition={shared.current}

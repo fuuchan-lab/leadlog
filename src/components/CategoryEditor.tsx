@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useI18n } from '../i18n/useI18n.ts'
 import { CATEGORY_COLORS, type Category } from '../settings.ts'
 
-type Reason = 'empty' | 'duplicate' | null
+/** cancelled: 確認でやめた（編集の画面はそのまま、エラーは出さない） */
+type Reason = 'empty' | 'duplicate' | 'cancelled' | null
 
 interface Props {
   title: string
@@ -12,10 +13,16 @@ interface Props {
   onUpdate: (id: string, label: string, color: string) => Reason
   onRemove: (id: string) => void
   onMove: (id: string, direction: -1 | 1) => void
+  /** 別のカードの中に入れて表示する（見出しを小さくし、枠は付けない） */
+  embedded?: boolean
+  /** いま選んでいる項目の名前。一覧の中で「この端末」の印を付ける */
+  selected?: string
+  /** 一覧の項目を選んだ時（「この端末で使う」を押した時） */
+  onSelect?: (label: string) => void
 }
 
 /** 重要度・顧客の種類のリストの編集（頭痛ログの薬の種類の設定と同じ操作） */
-export function CategoryEditor({ title, help, items, onAdd, onUpdate, onRemove, onMove }: Props) {
+export function CategoryEditor({ title, help, items, onAdd, onUpdate, onRemove, onMove, embedded, selected, onSelect }: Props) {
   const { t } = useI18n()
   const [label, setLabel] = useState('')
   const [error, setError] = useState<Reason>(null)
@@ -27,9 +34,12 @@ export function CategoryEditor({ title, help, items, onAdd, onUpdate, onRemove, 
     if (!reason) setLabel('')
   }
 
+  const Wrapper = embedded ? 'div' : 'section'
+  const Heading = embedded ? 'h3' : 'h2'
+
   return (
-    <section className="card">
-      <h2>{title}</h2>
+    <Wrapper className={embedded ? 'category-embedded' : 'card'}>
+      <Heading>{title}</Heading>
       <p className="muted small">{help}</p>
       <ul className="history">
         {items.map((c, index) =>
@@ -43,8 +53,14 @@ export function CategoryEditor({ title, help, items, onAdd, onUpdate, onRemove, 
                 <span className="tag" style={{ background: c.color }}>
                   {c.label}
                 </span>
+                {selected !== undefined && c.label === selected && <span className="this-device">✓ {t('device.thisDevice')}</span>}
               </span>
               <span className="med-actions">
+                {onSelect && c.label !== selected && (
+                  <button className="link" onClick={() => onSelect(c.label)}>
+                    {t('device.useHere')}
+                  </button>
+                )}
                 <button
                   className="link move-button"
                   disabled={index === 0}
@@ -99,8 +115,10 @@ export function CategoryEditor({ title, help, items, onAdd, onUpdate, onRemove, 
           {t('common.add')}
         </button>
       </div>
-      {error && <p className="error">{t(error === 'duplicate' ? 'category.errDup' : 'category.errEmpty')}</p>}
-    </section>
+      {error && error !== 'cancelled' && (
+        <p className="error">{t(error === 'duplicate' ? 'category.errDup' : 'category.errEmpty')}</p>
+      )}
+    </Wrapper>
   )
 }
 
@@ -156,7 +174,9 @@ function ItemEditor({ item, onSave, onClose }: { item: Category; onSave: (label:
           ))}
         </div>
       </div>
-      {error && <p className="error">{t(error === 'duplicate' ? 'category.errDup' : 'category.errEmpty')}</p>}
+      {error && error !== 'cancelled' && (
+        <p className="error">{t(error === 'duplicate' ? 'category.errDup' : 'category.errEmpty')}</p>
+      )}
       <div className="row">
         <button className="link" onClick={onClose}>
           {t('common.cancel')}

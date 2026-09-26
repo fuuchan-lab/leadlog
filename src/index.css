@@ -2212,3 +2212,51 @@ input[type='datetime-local'] {
   background: var(--card);
   font-size: 1.1rem;
 }
+
+/* 担当者の入力欄: 入力と、登録者一覧から選ぶ ▼ を横に並べる */
+.member-field {
+  display: flex;
+  gap: 6px;
+  flex: 1 1 90px;
+  min-width: 0;
+}
+.member-field input[type='text'] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.member-picker {
+  flex: 0 0 auto;
+  width: 3.4em;
+  padding-left: 8px;
+  padding-right: 4px;
+}
+.form-grid .member-field {
+  flex: 1 1 100%;
+}
+
+/* 登録者管理: この端末の登録者の印と、初回の登録者の選択 */
+.category-embedded {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.category-embedded h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+.this-device {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.member-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+.member-choices button {
+  flex: 1 1 6em;
+  min-height: 44px;
+}

@@ -9,7 +9,7 @@
 import { deleteFile, downloadText, ensureFolder, listFolderFiles, uploadFile, type DriveFile } from './drive.ts'
 import type { Author } from './types.ts'
 
-export const MAX_DEVICES = 10
+export const MAX_DEVICES = 20
 
 export const DEVICE_FILE_RE = /^device-([a-z0-9]{8})\.json$/
 export const deviceFileName = (deviceId: string) => `device-${deviceId}.json`

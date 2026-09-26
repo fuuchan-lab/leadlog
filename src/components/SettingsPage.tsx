@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { describeDevice, getDeviceId } from '../device.ts'
+import { sameName } from '../leadRename.ts'
 import { describeError } from '../errors.ts'
 import { driveConfig, ensureFolder, listSubfolders, type DriveFolder } from '../drive.ts'
 import type { SharedSettingsState } from '../hooks/useSharedSettings.ts'
@@ -8,7 +9,6 @@ import { useI18n } from '../i18n/useI18n.ts'
 import { ImportDataMissingError, importFromDriveFolder, importFromZip, type ImportResult } from '../importPackage.ts'
 import { isOcrReady, prepareOcr } from '../scan/ocr.ts'
 import { belongsTo } from '../exhibitions.ts'
-import { useLeaveGuard } from '../leaveGuard.ts'
 import { applyTheme, loadTheme, saveTheme, type ThemePreference } from '../theme.ts'
 import type { Lead } from '../types.ts'
 import { CategoryEditor } from './CategoryEditor.tsx'
@@ -27,6 +27,8 @@ interface Props {
   onExhibitionOpened: () => void
   /** 読み込んだリードを、この端末の一覧に反映する */
   onImported: () => Promise<void>
+  /** 登録者の名前を変えた時に、過去のリードの担当者・登録者も置き換える。変えたリードの件数を返す */
+  onRenameMember: (from: string, to: string) => Promise<number>
 }
 
 type ExportState =
@@ -45,13 +47,12 @@ type ImportState =
 
 type OcrState = { status: 'idle' | 'ready' | 'error' } | { status: 'busy'; p: number }
 
-export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhibitionOpened, onImported }: Props) {
+export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhibitionOpened, onImported, onRenameMember }: Props) {
   const { t, lang, setLang } = useI18n()
   const [theme, setTheme] = useState<ThemePreference>(loadTheme)
-  const [memberDraft, setMemberDraft] = useState(member)
-  // 登録者名を書き換えて「保存」を押していなければ、「戻る」の時に保存するか聞く
-  useLeaveGuard('member', memberDraft.trim() !== '' && memberDraft.trim() !== member, () => onMember(memberDraft.trim()))
   const [memberSaved, setMemberSaved] = useState(false)
+  /** 登録者の名前を変えた・統合した時の結果（何件のリードを置き換えたか） */
+  const [memberNotice, setMemberNotice] = useState('')
   const [exp, setExp] = useState<ExportState>({ status: 'idle' })
   const [scope, setScope] = useState<'all' | 'exhibition'>('exhibition')
   const [ocr, setOcr] = useState<OcrState>({ status: isOcrReady() ? 'ready' : 'idle' })
@@ -159,38 +160,73 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhi
         <p className="muted small">{t('device.help')}</p>
         <label className="field">
           {t('device.member')}
-          <div className="two">
-            <input
-              type="text"
-              className="grow"
-              maxLength={30}
-              placeholder={t('member.placeholder')}
-              value={memberDraft}
-              onChange={(e) => {
-                setMemberDraft(e.target.value)
-                setMemberSaved(false)
-              }}
-            />
-            <button
-              className="primary"
-              disabled={!memberDraft.trim() || memberDraft.trim() === member}
-              onClick={() => {
-                onMember(memberDraft.trim())
-                setMemberSaved(true)
-              }}
-            >
-              {t('common.save')}
-            </button>
-          </div>
+          {/* 登録者一覧から選ぶと、すぐこの端末の登録者が入れ替わる。一覧にない名前（以前に入力した名前）は、一番上に残す */}
+          <select
+            value={member}
+            onChange={(e) => {
+              onMember(e.target.value)
+              setMemberSaved(true)
+            }}
+          >
+            {member === '' && <option value="">{t('device.memberNone')}</option>}
+            {member !== '' && !shared.members.some((m) => m.label === member) && (
+              <option value={member}>{t('device.memberUnlisted', { name: member })}</option>
+            )}
+            {shared.members.map((m) => (
+              <option key={m.id} value={m.label}>
+                {m.label}
+              </option>
+            ))}
+          </select>
         </label>
-        {memberSaved && <p className="ok">{t('device.saved')}</p>}
+        {memberSaved && member !== '' && (
+          <p className="ok" role="status">
+            {t('device.changed', { name: member })}
+          </p>
+        )}
         <p className="muted small">{t('device.info', { device: describeDevice(navigator.userAgent), id: getDeviceId() })}</p>
+
+        <CategoryEditor
+          embedded
+          title={t('device.list')}
+          help={t('device.listHelp')}
+          items={shared.members}
+          selected={member}
+          onSelect={(label) => {
+            onMember(label)
+            setMemberSaved(true)
+          }}
+          onAdd={(label) => shared.categories.add('members', label)}
+          onUpdate={(id, label, color) => {
+            const before = shared.members.find((m) => m.id === id)?.label
+            if (before === undefined) return null
+            // 新しい名前がすでに一覧にあれば、その人に統合する（確認してから）
+            const existing = shared.members.find((m) => m.id !== id && sameName(m.label, label))
+            if (existing && !confirm(t('device.confirmMerge', { from: before, to: existing.label }))) return 'cancelled'
+            const result = shared.categories.renameMember(id, label, color)
+            if (!result.ok) return result.reason
+            // この端末の登録者の名前を変えた時は、この端末の登録者も新しい名前にそろえる
+            if (sameName(before, member)) onMember(result.label)
+            // 過去のリードの担当者・登録者も、新しい名前にまとめて置き換える
+            void onRenameMember(before, result.label).then((n) =>
+              setMemberNotice(t(result.merged ? 'device.merged' : 'device.renamed', { from: before, to: result.label, n })),
+            )
+            return null
+          }}
+          onRemove={(id) => shared.categories.remove('members', id)}
+          onMove={(id, dir) => shared.categories.move('members', id, dir)}
+        />
+        {memberNotice && (
+          <p className="ok" role="status">
+            {memberNotice}
+          </p>
+        )}
       </section>
 
       <DevicesCard loggedIn={loggedIn} />
 
 
-      {(['importance', 'customerTypes', 'interests', 'nextActions', 'members'] as const).map((kind) => (
+      {(['importance', 'customerTypes', 'interests', 'nextActions'] as const).map((kind) => (
         <CategoryEditor
           key={kind}
           title={t(`category.${kind}`)}

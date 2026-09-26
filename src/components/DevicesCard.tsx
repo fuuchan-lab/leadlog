@@ -6,7 +6,7 @@ import { useI18n } from '../i18n/useI18n.ts'
 
 type State = { status: 'idle' | 'loading' | 'error' } | { status: 'done'; devices: DeviceInfo[] }
 
-/** 共有アカウントに登録済みの端末（最大10台）の一覧と、解除 */
+/** 共有アカウントに登録済みの端末（最大 MAX_DEVICES 台）の一覧と、解除 */
 export function DevicesCard({ loggedIn }: { loggedIn: boolean }) {
   const { t, lang } = useI18n()
   const [state, setState] = useState<State>({ status: 'idle' })

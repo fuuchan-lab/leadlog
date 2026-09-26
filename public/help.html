@@ -43,6 +43,31 @@
         overflow-wrap: anywhere;
       }
       main { max-width: 760px; margin: 0 auto; padding: 20px 16px 64px; }
+      /* 右上の「戻る」ボタン。スクロールしても、いつでも押せるように上に留める */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        justify-content: flex-end;
+        margin: -20px -16px 4px;
+        padding: 10px 16px;
+        background: var(--bg);
+      }
+      .back-button {
+        font: inherit;
+        font-weight: 700;
+        min-height: 40px;
+        padding: 0 20px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--card);
+        color: var(--accent);
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      .back-button:hover { border-color: var(--accent); }
+      .back-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
       header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
       header img { width: 56px; height: 56px; border-radius: 14px; }
       h1 { font-size: 1.5rem; margin: 0; line-height: 1.3; }
@@ -83,6 +108,9 @@
   </head>
   <body>
     <main>
+      <div class="topbar">
+        <button type="button" id="backButton" class="back-button">戻る</button>
+      </div>
       <div id="ja" lang="ja">
         <header>
           <img src="./icon-192.png" alt="" />
@@ -116,8 +144,8 @@
             <a href="https://leadlog.doitmyself.net/">https://leadlog.doitmyself.net/</a> を開きます。
             iPhone は共有ボタン →「ホーム画面に追加」、Android はメニュー →「ホーム画面に追加」（アプリをインストール）で、アプリと同じように使えます。
           </p>
-          <h3>② 登録者名を入れる</h3>
-          <p>最初に「この端末で登録する人」に名前（例: 田中）を入れます。だれが登録したかをリードに記録するためです。あとで <kbd>⚙ 設定</kbd> →「この端末」で変えられます。</p>
+          <h3>② 登録者を選ぶ</h3>
+          <p>最初に「この端末で登録する人」を、登録者の一覧から選びます（一覧にない場合は名前を入力すると、一覧にも追加されます）。だれが登録したかをリードに記録するためです。あとで <kbd>⚙ 設定</kbd> →「登録者管理」の「この端末の登録者」で入れ替えられます。同じ画面の「登録者一覧」で、名前の追加・編集・削除・並べ替えもできます（全員で共有）。この一覧は、担当者の入力欄でも <kbd>▼</kbd> から選べます。</p>
           <h3>③ Google にログインする</h3>
           <p>
             右上の <kbd>ログイン</kbd> を押し、<strong>会社の共有 Google アカウント</strong>でログインします。
@@ -199,11 +227,11 @@
         <section id="ja-team">
           <h2>5. 複数人で使う（共有・同期・オフライン）</h2>
           <ul>
-            <li>同じ Google アカウントでログインした端末（<strong>最大10台</strong>）のリードは、Google ドライブの「LeadLog」フォルダーに集約されます。</li>
-            <li>だれが登録したかは、登録者名と端末 ID で区別されます。</li>
+            <li>同じ Google アカウントでログインした端末（<strong>最大20台</strong>）のリードは、Google ドライブの「LeadLog」フォルダーに集約されます。</li>
+            <li>だれが登録したかは、この端末の登録者と端末 ID で区別されます。</li>
             <li><strong>電波がないとき</strong>も登録できます。リードは端末に一時保存され、オンラインに戻ると自動で同期されます。二重に登録されることはありません。</li>
             <li>ログインボタンの <strong>オレンジの数字</strong>は、まだ同期していない件数です。ボタンを押すと「今すぐ同期」もできます。</li>
-            <li>10台を超えると、新しい端末は同期できません。設定 →「登録済みの端末」で、使わなくなった端末を<kbd>解除</kbd>してください。</li>
+            <li>20台を超えると、新しい端末は同期できません。設定 →「登録済みの端末」で、使わなくなった端末を<kbd>解除</kbd>してください。</li>
           </ul>
         </section>
 
@@ -235,7 +263,7 @@
             <li>展示会を作り、ロゴ・会場・日程・開場時間を入れる（前回の展示会をコピーすると早い）。</li>
             <li>「興味のある分野」に、ブースで紹介する製品・メーカーを登録しておく。</li>
             <li>重要度の基準を全員で決めておく（例: A = 具体的な案件あり・予算あり、B = 検討中 …）。</li>
-            <li>全員の端末で、登録者名の入力・ログイン・OCR の準備を済ませる。</li>
+            <li>登録者の一覧に全員の名前を入れ、全員の端末で、登録者の選択・ログイン・OCR の準備を済ませる。</li>
           </ul>
           <h3>会期中</h3>
           <ul>
@@ -310,7 +338,7 @@
           <h2>1. Getting started</h2>
           <ol>
             <li>Open <a href="https://leadlog.doitmyself.net/">https://leadlog.doitmyself.net/</a> in Safari (iPhone) or Chrome (Android) and add it to your home screen.</li>
-            <li>Enter your name under "Who is using this device" so each lead records who added it.</li>
+            <li>Pick your name under "Who is using this device" (from the team member list; if you are not on it, type your name and it is added) so each lead records who added it. You can change it later in <kbd>⚙ Settings</kbd> → Team members, where you can also add, edit, delete and reorder names (shared with everyone). The same list can be picked with <kbd>▼</kbd> in the staff fields.</li>
             <li>Tap <kbd>Log in</kbd> and sign in with the <strong>shared company Google account</strong>. Check "Google Drive files…" on the consent screen. When logged in and online, the button's border glows green.</li>
             <li><kbd>⚙ Settings</kbd> → Trade show → <kbd>＋ New show</kbd>: enter the name, venue, dates (tap the first and last day on the calendar), opening hours (tap start and end) and optionally a logo.</li>
             <li>Customize priority, customer types, areas of interest and next steps in Settings (shared with everyone).</li>
@@ -337,7 +365,7 @@
         <section>
           <h2>3. Working as a team</h2>
           <ul>
-            <li>Up to <strong>10 devices</strong> logged in to the same account share their leads in the "LeadLog" folder in Google Drive.</li>
+            <li>Up to <strong>20 devices</strong> logged in to the same account share their leads in the "LeadLog" folder in Google Drive.</li>
             <li>Works <strong>offline</strong>: leads are kept on the device and sync automatically when you are back online, without duplicates.</li>
             <li>The orange number on the login button is the number of unsynced leads.</li>
             <li>Each device chooses which show is open; opening a past show on one device does not affect the others.</li>
@@ -391,6 +419,17 @@
         document.getElementById(lang === 'en' ? 'ja' : 'en').hidden = true
         document.documentElement.lang = lang
         document.title = lang === 'en' ? 'Help — LeadLog' : 'ヘルプ — リードログ'
+
+        // 右上の「戻る」。別のタブで開いている時は、そのタブを閉じて元のアプリの画面に戻る。
+        // タブを閉じられない時（同じタブで開いた時・iPhone など）は、アプリの設定の画面に移る
+        var back = document.getElementById('backButton')
+        back.textContent = lang === 'en' ? 'Back' : '戻る'
+        back.addEventListener('click', function () {
+          window.close()
+          setTimeout(function () {
+            location.href = './#settings'
+          }, 250)
+        })
       })()
     </script>
   </body>
