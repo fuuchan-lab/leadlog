@@ -15,6 +15,8 @@ export interface FormLists {
   customerTypes: Category[]
   interests: Category[]
   nextActions: Category[]
+  /** 次のアクションの担当を選べる、登録者（社員）の一覧 */
+  members: Category[]
 }
 
 interface Props {
@@ -197,6 +199,8 @@ export function LeadForm({ value, onChange, lists, member, leads, editingId, pho
                     <span className="next-step-fields">
                       <input
                         type="text"
+                        list="member-list"
+                        autoComplete="off"
                         aria-label={`${a.label} ${t('field.who')}`}
                         placeholder={t('field.who')}
                         value={step.who}
@@ -214,6 +218,11 @@ export function LeadForm({ value, onChange, lists, member, leads, editingId, pho
               )
             })}
           </ul>
+          <datalist id="member-list">
+            {lists.members.map((m) => (
+              <option key={m.id} value={m.label} />
+            ))}
+          </datalist>
         </fieldset>
       )}
     </div>

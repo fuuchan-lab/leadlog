@@ -116,6 +116,7 @@ export function useSharedSettings() {
   const customerTypes = useMemo(() => visibleCategories(settings.customerTypes), [settings.customerTypes])
   const interests = useMemo(() => visibleCategories(settings.interests), [settings.interests])
   const nextActions = useMemo(() => visibleCategories(settings.nextActions), [settings.nextActions])
+  const members = useMemo(() => visibleCategories(settings.members), [settings.members])
 
   return {
     settings,
@@ -123,6 +124,7 @@ export function useSharedSettings() {
     customerTypes,
     interests,
     nextActions,
+    members,
     dirty,
     refresh,
     categories,

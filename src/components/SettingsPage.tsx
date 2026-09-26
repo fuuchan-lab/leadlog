@@ -190,7 +190,7 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhi
       <DevicesCard loggedIn={loggedIn} />
 
 
-      {(['importance', 'customerTypes', 'interests', 'nextActions'] as const).map((kind) => (
+      {(['importance', 'customerTypes', 'interests', 'nextActions', 'members'] as const).map((kind) => (
         <CategoryEditor
           key={kind}
           title={t(`category.${kind}`)}

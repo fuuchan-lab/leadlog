@@ -29,9 +29,12 @@ export interface SharedSettings {
   /** 次のアクションの種類（電話・メール、見積 など） */
   nextActions: Category[]
   nextActionsUpdatedAt: number
+  /** 次のアクションの担当を選べる、登録者（社員）の一覧 */
+  members: Category[]
+  membersUpdatedAt: number
 }
 
-export type CategoryKind = 'importance' | 'customerTypes' | 'interests' | 'nextActions'
+export type CategoryKind = 'importance' | 'customerTypes' | 'interests' | 'nextActions' | 'members'
 
 export const CATEGORY_COLORS = [
   '#dc2626',
@@ -80,6 +83,8 @@ export function defaultSettings(lang: 'ja' | 'en'): SharedSettings {
     interestsUpdatedAt: 0,
     nextActions,
     nextActionsUpdatedAt: 0,
+    members: [],
+    membersUpdatedAt: 0,
   }
 }
 
@@ -107,6 +112,8 @@ export function parseSettings(text: string, fallback: SharedSettings): SharedSet
     interestsUpdatedAt: Number(data.interestsUpdatedAt) || 0,
     nextActions: Array.isArray(data.nextActions) ? data.nextActions.filter(isCategory) : fallback.nextActions,
     nextActionsUpdatedAt: Number(data.nextActionsUpdatedAt) || 0,
+    members: Array.isArray(data.members) ? data.members.filter(isCategory) : fallback.members,
+    membersUpdatedAt: Number(data.membersUpdatedAt) || 0,
   }
 }
 
@@ -120,6 +127,7 @@ export function mergeSettings(local: SharedSettings, remote: SharedSettings): Sh
   const types = remote.customerTypesUpdatedAt > local.customerTypesUpdatedAt ? remote : local
   const interests = remote.interestsUpdatedAt > local.interestsUpdatedAt ? remote : local
   const actions = remote.nextActionsUpdatedAt > local.nextActionsUpdatedAt ? remote : local
+  const members = remote.membersUpdatedAt > local.membersUpdatedAt ? remote : local
   return {
     exhibitions: mergeExhibitions(local.exhibitions, remote.exhibitions),
     importance: imp.importance,
@@ -130,6 +138,8 @@ export function mergeSettings(local: SharedSettings, remote: SharedSettings): Sh
     interestsUpdatedAt: interests.interestsUpdatedAt,
     nextActions: actions.nextActions,
     nextActionsUpdatedAt: actions.nextActionsUpdatedAt,
+    members: members.members,
+    membersUpdatedAt: members.membersUpdatedAt,
   }
 }
 

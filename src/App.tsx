@@ -33,6 +33,7 @@ export default function App() {
     customerTypes: shared.customerTypes,
     interests: shared.interests,
     nextActions: shared.nextActions,
+    members: shared.members,
   }
 
   const changeMember = (name: string) => {
