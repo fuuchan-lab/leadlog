@@ -259,6 +259,7 @@ export function LeadList({
                     member={member}
                     leads={leads}
                     editingId={l.id}
+                    photoId={l.photoId ?? undefined}
                   />
                   {/* 登録した展示会を変える（未分類のリードを展示会に入れる時など） */}
                   <label className="field">

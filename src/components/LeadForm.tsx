@@ -6,6 +6,7 @@ import { PREFECTURES } from '../scan/extract.ts'
 import type { Category } from '../settings.ts'
 import type { Lead, LeadFields, NextStep } from '../types.ts'
 import { CategoryPicker, MultiCategoryPicker } from './CategoryPicker.tsx'
+import { LeadPhoto } from './LeadPhoto.tsx'
 import { StickyNoteField } from './StickyNoteField.tsx'
 
 /** 入力で選ぶリスト（設定で全員共通に変えられるもの） */
@@ -26,6 +27,8 @@ interface Props {
   leads: Lead[]
   /** 編集中のリード。編集の時だけ、自動で記録した来場日時・担当者を直せる */
   editingId?: string
+  /** 編集中のリードに保存済みの、名刺・バッジの画像 */
+  photoId?: string
 }
 
 const TEXT_FIELDS: { key: 'name' | 'company' | 'department' | 'title'; label: MessageKey }[] = [
@@ -47,7 +50,7 @@ function toLocalInput(ts: number): string {
  * リードの入力欄（新規登録と編集で共通）。紙の Fair Meeting Note と同じ区切りにしている:
  * 基本情報 / 優先度・分類 / 興味のある分野 / メモ・コメント / 次のアクション
  */
-export function LeadForm({ value, onChange, lists, member, leads, editingId }: Props) {
+export function LeadForm({ value, onChange, lists, member, leads, editingId, photoId }: Props) {
   const { t } = useI18n()
   const set = <K extends keyof LeadFields>(key: K, v: LeadFields[K]) => onChange({ ...value, [key]: v })
   const duplicates = matchingLeads(value, leads, editingId)
@@ -71,6 +74,7 @@ export function LeadForm({ value, onChange, lists, member, leads, editingId }: P
     <div className="lead-form">
       <fieldset className="form-section">
         <legend>{t('form.sectionGeneral')}</legend>
+        {photoId && <LeadPhoto id={photoId} className="scan-result" alt={t('form.photo')} />}
         <div className="form-grid">
           {TEXT_FIELDS.map((f) => (
             <label key={f.key} className="field">
