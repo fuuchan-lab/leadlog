@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { AdBanner } from './components/AdBanner.tsx'
 import { CaptureCard } from './components/CaptureCard.tsx'
 import { Header } from './components/Header.tsx'
 import { LeadList } from './components/LeadList.tsx'
@@ -149,6 +150,7 @@ export default function App() {
           onCancel={() => setAskSave(false)}
         />
       )}
+      <AdBanner />
     </main>
   )
 }
