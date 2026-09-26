@@ -66,6 +66,12 @@ export function LeadForm({ value, onChange, lists, member, leads, editingId, pho
         ? value.nextSteps.filter((s) => s.action !== action)
         : [...value.nextSteps, { action, who: member, when: '' }],
     )
+  /** 日付（YYYY-MM-DD）と時刻（HH:MM）から来場日時を決める。どちらかが空なら変えない */
+  const setMetAt = (date: string, time: string) => {
+    if (!date || !time) return
+    const ts = new Date(`${date}T${time}`).getTime()
+    if (!Number.isNaN(ts)) set('metAt', ts)
+  }
   const updateStep = (action: string, patch: Partial<NextStep>) =>
     set(
       'nextSteps',
@@ -74,6 +80,12 @@ export function LeadForm({ value, onChange, lists, member, leads, editingId, pho
 
   return (
     <div className="lead-form">
+      {/* 担当者（受付）・次のアクションの担当、両方の入力欄で使う候補一覧 */}
+      <datalist id="member-list">
+        {lists.members.map((m) => (
+          <option key={m.id} value={m.label} />
+        ))}
+      </datalist>
       <fieldset className="form-section">
         <legend>{t('form.sectionGeneral')}</legend>
         {photoId && <LeadPhoto id={photoId} className="scan-result" alt={t('form.photo')} />}
@@ -122,20 +134,33 @@ export function LeadForm({ value, onChange, lists, member, leads, editingId, pho
           {/* 来場日時と担当者は自動で記録する。編集の時だけ、直せるように出す */}
           {editing && (
             <>
-              <label className="field">
+              {/* 日付と時刻は別々の入力欄にする（スマホでは日時を1つにした入力欄が枠からはみ出して重なるため） */}
+              <div className="field field-wide">
                 {t('field.metAt')}
-                <input
-                  type="datetime-local"
-                  value={value.metAt ? toLocalInput(value.metAt) : ''}
-                  onChange={(e) => {
-                    const ts = new Date(e.target.value).getTime()
-                    if (!Number.isNaN(ts)) set('metAt', ts)
-                  }}
-                />
-              </label>
-              <label className="field">
+                <div className="met-at-fields">
+                  <input
+                    type="date"
+                    aria-label={`${t('field.metAt')} (date)`}
+                    value={value.metAt ? toLocalInput(value.metAt).slice(0, 10) : ''}
+                    onChange={(e) => setMetAt(e.target.value, value.metAt ? toLocalInput(value.metAt).slice(11) : '00:00')}
+                  />
+                  <input
+                    type="time"
+                    aria-label={`${t('field.metAt')} (time)`}
+                    value={value.metAt ? toLocalInput(value.metAt).slice(11) : ''}
+                    onChange={(e) => setMetAt(value.metAt ? toLocalInput(value.metAt).slice(0, 10) : '', e.target.value)}
+                  />
+                </div>
+              </div>
+              <label className="field field-wide">
                 {t('field.staff')}
-                <input type="text" autoComplete="off" value={value.staff} onChange={(e) => set('staff', e.target.value)} />
+                <input
+                  type="text"
+                  list="member-list"
+                  autoComplete="off"
+                  value={value.staff}
+                  onChange={(e) => set('staff', e.target.value)}
+                />
               </label>
             </>
           )}
@@ -218,11 +243,6 @@ export function LeadForm({ value, onChange, lists, member, leads, editingId, pho
               )
             })}
           </ul>
-          <datalist id="member-list">
-            {lists.members.map((m) => (
-              <option key={m.id} value={m.label} />
-            ))}
-          </datalist>
         </fieldset>
       )}
     </div>

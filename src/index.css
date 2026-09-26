@@ -1549,6 +1549,20 @@ textarea.sticky::placeholder {
 .form-grid select {
   min-width: 0;
 }
+.form-grid .field-wide {
+  grid-column: 1 / -1;
+}
+.met-at-fields {
+  display: flex;
+  gap: 8px;
+}
+.met-at-fields input {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.met-at-fields input[type='time'] {
+  flex: 0 1 130px;
+}
 @media (max-width: 379px) {
   .form-grid {
     grid-template-columns: 1fr;
@@ -1558,7 +1572,8 @@ input[type='text'],
 input[type='email'],
 input[type='tel'],
 input[type='search'],
-input[type='date'] {
+input[type='date'],
+input[type='time'] {
   font: inherit;
   font-size: 16px;
   padding: 8px 10px;
