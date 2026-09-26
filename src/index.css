@@ -256,91 +256,6 @@ button.link:disabled {
   color: var(--muted);
 }
 
-.levels {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
-}
-
-.level {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-height: 64px;
-  padding: 8px 2px;
-  border-radius: 10px;
-  border: 2px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
-}
-
-.level.selected {
-  border-color: var(--c);
-  background: color-mix(in srgb, var(--c) 30%, var(--card));
-}
-
-.level-num {
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.level-label {
-  font-size: 0.6rem;
-  line-height: 1.2;
-  text-align: center;
-  color: var(--muted);
-}
-
-.file-btn {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 8px 12px;
-  border: 1px dashed var(--border);
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-.preview {
-  max-width: 100%;
-  max-height: 220px;
-  object-fit: contain;
-  border-radius: 10px;
-  align-self: flex-start;
-}
-
-.seg {
-  display: flex;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.seg button {
-  background: none;
-  border: 0;
-  min-height: 36px;
-  padding: 4px 10px;
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-
-.seg button.on {
-  background: var(--accent);
-  color: var(--accent-text);
-}
-
-.chart {
-  width: 100%;
-  min-width: 0;
-  /* 縦のスクロールはページに任せ、横のドラッグとピンチはグラフで処理する */
-  touch-action: pan-y;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
 .history {
   list-style: none;
   margin: 0;
@@ -358,66 +273,12 @@ button.link:disabled {
   border-top: 0;
 }
 
-.dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-right: 6px;
-}
-
-.note {
-  color: var(--muted);
-  font-size: 0.875rem;
-}
-
 .thumb {
   width: 96px;
   height: 96px;
   object-fit: cover;
   border-radius: 8px;
   margin-top: 6px;
-}
-
-/* 頭痛レベルのスライダー */
-.slider {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.slider-value {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-}
-
-.slider-num {
-  font-size: 2.25rem;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--c);
-}
-
-.slider-label {
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.slider input[type='range'] {
-  width: 100%;
-  height: 44px;
-  margin: 0;
-  accent-color: var(--c);
-  touch-action: pan-y;
-}
-
-.slider-ticks {
-  display: flex;
-  justify-content: space-between;
-  padding: 0 8px;
-  color: var(--muted);
-  font-size: 0.8rem;
 }
 
 /* 履歴の編集 */
@@ -440,7 +301,7 @@ button.link:disabled {
   color: var(--text);
 }
 
-/* 薬の選択・設定 */
+/* 入力欄の並び */
 .two {
   display: flex;
   gap: 8px;
@@ -462,7 +323,7 @@ select {
   gap: 8px;
 }
 
-/* 薬の一覧の右側（並べ替え・編集・削除）。狭い画面でも押しやすい大きさを保つ */
+/* 一覧の右側（並べ替え・編集・削除）。狭い画面でも押しやすい大きさを保つ */
 .med-actions {
   display: inline-flex;
   align-items: center;
@@ -472,30 +333,6 @@ select {
 button.link.move-button {
   padding: 4px 6px;
   min-width: 36px;
-}
-
-.legend {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 14px;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
-.legend li {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.swatch {
-  display: inline-block;
-  width: 14px;
-  height: 4px;
-  border-radius: 2px;
 }
 
 /* ヘッダー（アプリ名・設定・Googleログイン） */
@@ -643,63 +480,7 @@ button.danger-btn {
   cursor: pointer;
 }
 
-/* 現在の気圧・今後の変化（左）と、天気・気温・湿度（右） */
-.now {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 12px;
-}
-
-/* 現在の気圧の数字。カードの主役なので大きく */
-.big-pressure {
-  font-size: clamp(2.6rem, 11vw, 3.4rem);
-  line-height: 1.1;
-}
-
-.weather {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 12px;
-  /* 背景色は不快指数に応じて画面側で指定する。濃い色にしてあるので文字は白。影を付けて黄色い背景でも読みやすくする */
-  background: hsl(125 60% 27%);
-  color: #ffffff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
-  transition: background-color 0.5s ease;
-}
-
-.weather-main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.weather-icon {
-  font-size: 2.6rem;
-  line-height: 1.1;
-}
-
-.weather-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #ffffff;
-}
-
-.weather-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  white-space: nowrap;
-}
-
-/* 小さめのスマホ（幅380px未満）: 頭痛ボタンを3列×2段にして文字を読みやすくする */
+/* 小さめのスマホ（幅380px未満）: 余白を詰める */
 @media (max-width: 379px) {
   .app {
     gap: 12px;
@@ -707,10 +488,6 @@ button.danger-btn {
 
   .card {
     padding: 12px;
-  }
-
-  .levels {
-    grid-template-columns: repeat(3, 1fr);
   }
 
   .big {
@@ -778,7 +555,6 @@ textarea.sticky::placeholder {
   color: var(--accent-text);
 }
 
-/* 言語の選択（設定画面） */
 .chart-loading {
   /* グラフの読み込み中に、下の画面が動かないよう場所を確保する */
   min-height: 320px;
@@ -797,6 +573,7 @@ textarea.sticky::placeholder {
   margin-top: 12px;
 }
 
+/* 言語の選択（設定画面） */
 .language-select {
   width: auto;
   min-height: 44px;
@@ -836,62 +613,6 @@ textarea.sticky::placeholder {
   }
 }
 
-/* 気圧の小さな推移グラフ（6時間前〜6時間後） */
-.spark {
-  display: block;
-  width: 100%;
-  height: auto;
-  overflow: visible;
-}
-
-.spark-line {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 2;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
-
-.spark-future {
-  stroke-dasharray: 3 3;
-  opacity: 0.85;
-}
-
-.spark-now-line {
-  stroke: var(--muted);
-  stroke-width: 1;
-  stroke-dasharray: 2 2;
-  opacity: 0.6;
-}
-
-.spark-dot {
-  fill: var(--card);
-  stroke: var(--accent);
-  stroke-width: 1.6;
-}
-
-.spark-dot-now {
-  fill: var(--accent);
-  stroke: var(--card);
-  stroke-width: 1.5;
-}
-
-.spark-label {
-  fill: var(--muted);
-  font-size: 9px;
-}
-
-/* 推移グラフの数値（2時間ごと）。線と重なっても読めるよう、背景色の縁取りを付ける */
-.spark-value {
-  fill: var(--text);
-  font-size: 9.5px;
-  font-weight: 600;
-  paint-order: stroke;
-  stroke: var(--card);
-  stroke-width: 3px;
-  stroke-linejoin: round;
-}
-
 /* タイトルの左のアプリアイコン。文字と同じくらいの大きさ */
 .brand {
   display: flex;
@@ -916,35 +637,7 @@ textarea.sticky::placeholder {
   margin-left: auto;
 }
 
-/* グラフの拡大・縮小ボタン */
-.zoom {
-  display: flex;
-  gap: 6px;
-}
-
-.zoom button {
-  min-width: 44px;
-  min-height: 40px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg);
-  color: var(--text);
-  font-size: 1.2rem;
-  line-height: 1;
-}
-
-.zoom button:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-/* 表示範囲のボタン（全体・1日・3日…）は、狭い画面で折り返せるように */
-.seg {
-  flex-wrap: wrap;
-  align-self: flex-start;
-}
-
-/* 薬の色の選択。4つ×2段の小さめの丸 */
+/* 色の選択。4つ×2段の小さめの丸 */
 .swatches {
   display: grid;
   grid-template-columns: repeat(4, 26px);
@@ -964,49 +657,17 @@ textarea.sticky::placeholder {
   box-shadow: 0 0 0 2px var(--text);
 }
 
-/* 薬の名前の下の行: 左に服薬間隔、右に色の選択。狭い画面では色が下に回り込む */
-.interval-color {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px 20px;
-}
-
-.interval-color > .field:first-child {
-  flex: 1 1 11em;
-}
-
-/* 気圧が上がりつつある時のお知らせ */
+/* 情報のお知らせ（オフラインなど） */
 .banner-info {
   background: var(--info-bg);
   color: var(--info-text);
 }
 
-/* アドバイスのポップアップ。長いので、画面より高くなったらポップアップの中でスクロールする */
+/* ポップアップは、画面より高くなったらポップアップの中でスクロールする */
 .modal-card {
   max-height: 88vh;
   max-height: 88dvh;
   overflow-y: auto;
-}
-
-.advice-section h3 {
-  margin: 4px 0 6px;
-  font-size: 1rem;
-}
-
-.advice-section p {
-  margin: 0 0 8px;
-  font-size: 0.9rem;
-}
-
-.advice-section ul {
-  margin: 0;
-  padding-left: 1.2em;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 0.9rem;
 }
 
 /* ポップアップの中の要素は、内容が長くなっても縮めない（縮むとタブなどが潰れて見えなくなる） */
@@ -1014,109 +675,14 @@ textarea.sticky::placeholder {
   flex-shrink: 0;
 }
 
-/* 記録するカード（今の頭痛・服薬）の見出しは、他のカードより大きく */
+/* 読み取りカードの見出しは、他のカードより大きく */
 .form-title {
   font-size: 1.3rem;
   font-weight: 700;
   line-height: 1.3;
 }
 
-/* 気圧カードの下段: 左に「最後に薬を飲んでから」、右に気圧の変化のお知らせと「アドバイス」ボタン */
-.pressure-bottom {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-  gap: 10px;
-  align-items: stretch;
-}
-
-.pressure-bottom-single {
-  grid-template-columns: 1fr;
-}
-
-.med-status {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  padding: 10px 9px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--bg);
-}
-
-.med-status-title {
-  margin: 0;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--muted);
-}
-
-.med-status-time {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-.pressure-advice {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-}
-
-/* 気圧の変化のお知らせは大きめに、「アドバイス」ボタンは小さめに */
-.pressure-advice .banner {
-  margin: 0;
-  padding: 10px 12px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  line-height: 1.4;
-  /* 「…ありま／す。」のように、最後の1文字だけ次の行に残らないよう、行を均等に折り返す */
-  text-wrap: balance;
-  /* 日本語は、語の途中ではなく文節の区切りで折り返す（対応していないブラウザでは無視される） */
-  word-break: auto-phrase;
-}
-
-.pressure-advice .secondary {
-  min-height: 36px;
-  padding: 6px 10px;
-  font-size: 0.85rem;
-  border-radius: 8px;
-}
-
-/* 幅がとても狭いスマホでは、左右に並べず上下に並べる */
-@media (max-width: 389px) {
-  .pressure-bottom {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* 薬名などは、途中で折り返さず、1語のまま次の行へ送る */
-.nowrap {
-  white-space: nowrap;
-}
-
-/* 服薬の記録がない時のメッセージ */
-.med-status-empty {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  line-height: 1.5;
-}
-
-/* 服薬間隔の入力（数字と単位を1行に） */
-.interval-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.interval-row input {
-  width: 7em;
-}
-
-/* 薬の名前の左のカプセルアイコン（選んだ色がすぐ反映される） */
+/* 名前の入力欄 */
 .name-row {
   display: flex;
   align-items: center;
@@ -1126,174 +692,6 @@ textarea.sticky::placeholder {
 .name-row input {
   flex: 1;
   min-width: 0;
-}
-
-/* 「最後に服薬してから」: 薬名と錠数は白の太字、次の服薬までの時間は控えめに */
-.med-status-drug {
-  color: var(--text);
-  font-weight: 700;
-  font-size: 0.95rem;
-}
-
-.med-status-next {
-  margin: 2px 0 0;
-  font-size: 0.75rem;
-  line-height: 1.4;
-  /* 「次の服薬が可能になるまで／あと」は、「最後に服薬してから」と同じ文字色。時間だけ太字で目立たせる */
-  color: var(--muted);
-}
-
-.med-status-next strong {
-  color: var(--text);
-}
-
-/* 気圧の推移グラフの「今」の丸は、ゆっくり点滅させて、いまの位置が分かるようにする */
-@keyframes spark-blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.25;
-  }
-}
-
-.spark-dot-now {
-  animation: spark-blink 2.4s ease-in-out infinite;
-}
-
-/* 動きを減らす設定の端末では、点滅させない */
-@media (prefers-reduced-motion: reduce) {
-  .spark-dot-now {
-    animation: none;
-  }
-}
-
-/*
- * 気圧が下がる時のお知らせ（気圧カードの中だけ）は、後ろの背景色だけをゆっくり点滅させて気づきやすくする。
- * 文字は点滅させない（透明度は変えず、背景色だけを、カードの色に近い色との間で行き来させる）。
- */
-@keyframes banner-blink {
-  0%,
-  100% {
-    background-color: var(--blink-from);
-  }
-  50% {
-    background-color: color-mix(in srgb, var(--blink-from) 22%, var(--card));
-  }
-}
-
-.pressure-advice .banner-caution {
-  --blink-from: var(--caution-bg);
-  animation: banner-blink 2.8s ease-in-out infinite;
-}
-
-.pressure-advice .banner-warning {
-  --blink-from: var(--warning-bg);
-  animation: banner-blink 2.8s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pressure-advice .banner-caution,
-  .pressure-advice .banner-warning {
-    animation: none;
-  }
-}
-
-/* スマホ（幅430px以下）でも、気圧の右に天気・気温・湿度のボックスを並べる。収まるよう、文字とボックスを小さめにする */
-@media (max-width: 430px) {
-  .now {
-    flex-wrap: nowrap;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .big-pressure {
-    min-width: 0;
-    font-size: clamp(2.1rem, 9.5vw, 3.4rem);
-  }
-
-  .big-pressure .unit {
-    font-size: 0.85rem;
-  }
-
-  .weather {
-    flex: none;
-    gap: 6px;
-    padding: 6px 8px;
-  }
-
-  .weather-icon {
-    font-size: 2rem;
-  }
-
-  /* 「くもり時々晴れ」のような長い天気名は、2行に折り返して幅を取らない */
-  .weather-label {
-    max-width: 5.5em;
-    font-size: 0.7rem;
-    line-height: 1.2;
-    text-align: center;
-  }
-
-  .weather-meta {
-    font-size: 0.8rem;
-  }
-}
-
-/* 幅がとても狭い画面だけは、気圧の下に回り込ませる */
-@media (max-width: 339px) {
-  .now {
-    flex-wrap: wrap;
-  }
-}
-
-/* 位置情報が取れない時の警告（設定方法の案内と再試行のボタン付き） */
-.location-warning {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 12px;
-  background: var(--warning-bg);
-  color: var(--warning-text);
-}
-
-.location-warning-text {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 700;
-  line-height: 1.5;
-}
-
-.location-warning .row {
-  justify-content: stretch;
-  flex-wrap: wrap;
-}
-
-.location-warning .row button {
-  flex: 1 1 8em;
-  min-height: 44px;
-}
-
-.location-warning .muted {
-  color: inherit;
-  opacity: 0.8;
-}
-
-/* 位置情報を許可する手順 */
-.loc-platform {
-  margin: 4px 0 0;
-  font-size: 1rem;
-}
-
-.loc-steps {
-  margin: 0;
-  padding-left: 1.4em;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 0.9rem;
-  line-height: 1.6;
 }
 
 /* ---- リードログで追加 ---- */
@@ -1416,10 +814,6 @@ textarea.sticky::placeholder {
   background: var(--ok-bg);
   color: var(--ok-text);
 }
-.kpi-off {
-  background: var(--border);
-  color: var(--muted);
-}
 .kpi-label {
   font-size: 0.8rem;
   font-weight: 600;
@@ -1507,10 +901,6 @@ textarea.sticky::placeholder {
   stroke: #fbbf24;
   cursor: grab;
 }
-.scan-actions {
-  flex-wrap: wrap;
-  gap: 8px;
-}
 .scan-result {
   width: 100%;
   max-height: 240px;
@@ -1582,12 +972,6 @@ input[type='time'] {
   background: var(--card);
   color: var(--text);
   width: 100%;
-}
-.hours-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
 }
 .radio {
   display: flex;
@@ -1822,14 +1206,6 @@ input[type='datetime-local'] {
 /* アプリ名が画面の幅に対して長い場合に備えて、見出しを少し小さくして設定・ログインのボタンと重ならないようにする */
 .brand-text h1 {
   font-size: clamp(1.15rem, 5.4vw, 2rem);
-}
-.brand {
-  min-width: 0;
-}
-.brand-text {
-  min-width: 0;
-}
-.brand-text h1 {
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -1845,13 +1221,6 @@ input[type='datetime-local'] {
 }
 
 /* ---- 展示会の設定 ---- */
-.current-exhibition {
-  margin: 0;
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: var(--info-bg);
-  color: var(--info-text);
-}
 .seg-tabs {
   display: flex;
   gap: 4px;

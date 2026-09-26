@@ -21,7 +21,7 @@ interface Props {
   onSelect?: (label: string) => void
 }
 
-/** 重要度・顧客の種類のリストの編集（頭痛ログの薬の種類の設定と同じ操作） */
+/** 重要度・顧客の種類などのリストの編集（追加・名前と色の変更・並べ替え・削除） */
 export function CategoryEditor({ title, help, items, onAdd, onUpdate, onRemove, onMove, embedded, selected, onSelect }: Props) {
   const { t } = useI18n()
   const [label, setLabel] = useState('')

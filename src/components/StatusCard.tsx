@@ -19,7 +19,7 @@ interface Props {
 }
 
 /**
- * ダッシュボード（頭痛ログの気圧のカードの位置）。開いている展示会の会期中のリード件数と、
+ * ダッシュボード。開いている展示会の会期中のリード件数と、
  * 時間帯別の棒グラフ、重要度別・登録者別の件数を表示する。
  */
 export function StatusCard({ leads, exhibition, importance, onOpenSettings }: Props) {

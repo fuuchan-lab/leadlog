@@ -166,8 +166,6 @@ export function useLeads() {
   return { leads, trash, unsyncedCount, reload, add, update, moveToTrash, restore, purge, moveTo, renameMember }
 }
 
-export type LeadsState = ReturnType<typeof useLeads>
-
 function trimFields(f: LeadFields): LeadFields {
   return {
     name: f.name.trim(),
