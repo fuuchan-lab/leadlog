@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AdBanner } from './components/AdBanner.tsx'
+import { BottomDock, type Tab } from './components/BottomDock.tsx'
 import { CaptureCard } from './components/CaptureCard.tsx'
 import { Header } from './components/Header.tsx'
 import { LeadList } from './components/LeadList.tsx'
@@ -20,10 +20,11 @@ import { hasUnsavedChanges, saveAllChanges } from './leaveGuard.ts'
 export default function App() {
   const { t, lang } = useI18n()
   const online = useOnline()
-  // URL の末尾が #settings なら設定の画面から開く（ホーム画面のショートカットや確認用）
-  const [view, setView] = useState<'home' | 'settings'>(() => (location.hash === '#settings' ? 'settings' : 'home'))
+  // 下のナビゲーションで切り替える画面。URL の末尾が #settings なら設定の画面から開く（ホーム画面のショートカットや確認用）
+  const [tab, setTab] = useState<Tab>(() => (location.hash === '#settings' ? 'settings' : 'capture'))
+  /** 設定の画面を離れる時に「変更を保存しますか？」を出している間、行き先を覚えておく */
+  const [pendingTab, setPendingTab] = useState<Tab | null>(null)
   const [member, setMember] = useState(loadMember)
-  const [askSave, setAskSave] = useState(false)
   const { leads, trash, unsyncedCount, reload, add, update, moveToTrash, restore, purge, moveTo, renameMember } = useLeads()
   const shared = useSharedSettings()
   const auth = useGoogleAuth()
@@ -42,20 +43,26 @@ export default function App() {
     setMember(name)
   }
 
+  const goTab = (next: Tab) => {
+    if (next === tab) return
+    // 設定の画面から離れる時、保存していない変更があれば「変更を保存しますか？」を出す
+    if (tab === 'settings' && hasUnsavedChanges()) {
+      setPendingTab(next)
+      return
+    }
+    setTab(next)
+    window.scrollTo(0, 0)
+  }
+
+  const leaveSettings = () => {
+    if (pendingTab) setTab(pendingTab)
+    setPendingTab(null)
+    window.scrollTo(0, 0)
+  }
+
   return (
     <main className="app">
-      <Header
-        view={view}
-        onToggleSettings={() => {
-          if (view === 'home') setView('settings')
-          // 設定の画面から戻る時、保存していない変更があれば「変更を保存しますか？」を出す
-          else if (hasUnsavedChanges()) setAskSave(true)
-          else setView('home')
-        }}
-        auth={auth}
-        sync={sync}
-        unsyncedCount={unsyncedCount}
-      />
+      <Header auth={auth} sync={sync} unsyncedCount={unsyncedCount} />
 
       {/* 電波がない場所でも登録できることを伝える。ネットにつながると自動で同期する */}
       {!online && (
@@ -71,7 +78,62 @@ export default function App() {
         </p>
       )}
 
-      {view === 'settings' ? (
+      {/* 撮影・記録と一覧は、切り替えても入力途中の内容や検索の状態が消えないよう、隠すだけにして残す */}
+      <div className={tab === 'capture' ? 'tab-panel' : 'tab-panel tab-hidden'}>
+        {!member && (
+          <MemberPrompt
+            members={shared.members}
+            onPick={changeMember}
+            onCreate={(name) => {
+              // 一覧に無い名前は、登録者一覧にも加える（ほかの端末や担当者の入力欄でも選べるように）
+              shared.categories.add('members', name)
+              changeMember(name)
+            }}
+          />
+        )}
+        <CaptureCard
+          lists={lists}
+          member={member}
+          leads={leads}
+          exhibition={shared.current}
+          memberReady={member !== ''}
+          onSave={add}
+        />
+      </div>
+
+      <div className={tab === 'list' ? 'tab-panel' : 'tab-panel tab-hidden'}>
+        <LeadList
+          leads={leads}
+          exhibition={shared.current}
+          allImportance={shared.settings.importance}
+          allCustomerTypes={shared.settings.customerTypes}
+          allInterests={shared.settings.interests}
+          allNextActions={shared.settings.nextActions}
+          lists={lists}
+          member={member}
+          trash={trash}
+          allExhibitions={shared.settings.exhibitions}
+          exhibitions={shared.exhibitions}
+          onUpdate={update}
+          onTrash={moveToTrash}
+          onRestore={restore}
+          onPurge={purge}
+          onMove={moveTo}
+        />
+      </div>
+
+      {tab === 'dashboard' && (
+        <div className="tab-panel">
+          <StatusCard
+            leads={leads}
+            exhibition={shared.current}
+            importance={shared.importance}
+            onOpenSettings={() => goTab('settings')}
+          />
+        </div>
+      )}
+
+      {tab === 'settings' && (
         <div className="settings-grid">
           <SettingsPage
             shared={shared}
@@ -79,78 +141,24 @@ export default function App() {
             onMember={changeMember}
             leads={leads}
             loggedIn={auth.account !== null}
-            onExhibitionOpened={() => setView('home')}
+            onExhibitionOpened={() => setTab('dashboard')}
             onImported={reload}
             onRenameMember={renameMember}
           />
         </div>
-      ) : (
-        // スマホ（縦長）は1列。PC などの横長の大きい画面では、左にダッシュボードと読み取り、右に一覧の2列
-        <div className="home-grid">
-          <div className="home-col">
-          {!member && (
-            <MemberPrompt
-              members={shared.members}
-              onPick={changeMember}
-              onCreate={(name) => {
-                // 一覧に無い名前は、登録者一覧にも加える（ほかの端末や担当者の入力欄でも選べるように）
-                shared.categories.add('members', name)
-                changeMember(name)
-              }}
-            />
-          )}
-          <StatusCard
-            leads={leads}
-            exhibition={shared.current}
-            importance={shared.importance}
-            onOpenSettings={() => setView('settings')}
-          />
-          <CaptureCard
-            lists={lists}
-            member={member}
-            leads={leads}
-            exhibition={shared.current}
-            memberReady={member !== ''}
-            onSave={add}
-          />
-          </div>
-          <div className="home-col">
-          <LeadList
-            leads={leads}
-            exhibition={shared.current}
-            allImportance={shared.settings.importance}
-            allCustomerTypes={shared.settings.customerTypes}
-            allInterests={shared.settings.interests}
-            allNextActions={shared.settings.nextActions}
-            lists={lists}
-            member={member}
-            trash={trash}
-            allExhibitions={shared.settings.exhibitions}
-            exhibitions={shared.exhibitions}
-            onUpdate={update}
-            onTrash={moveToTrash}
-            onRestore={restore}
-            onPurge={purge}
-            onMove={moveTo}
-          />
-          </div>
-        </div>
       )}
-      {askSave && (
+
+      {pendingTab && (
         <SaveChangesModal
           onSave={() => {
             saveAllChanges()
-            setAskSave(false)
-            setView('home')
+            leaveSettings()
           }}
-          onDiscard={() => {
-            setAskSave(false)
-            setView('home')
-          }}
-          onCancel={() => setAskSave(false)}
+          onDiscard={leaveSettings}
+          onCancel={() => setPendingTab(null)}
         />
       )}
-      <AdBanner />
+      <BottomDock tab={tab} onTab={goTab} />
     </main>
   )
 }
