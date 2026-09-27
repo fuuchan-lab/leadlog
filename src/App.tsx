@@ -24,6 +24,8 @@ export default function App() {
   const [tab, setTab] = useState<Tab>(() => (location.hash === '#settings' ? 'settings' : 'capture'))
   /** 設定の画面を離れる時に「変更を保存しますか？」を出している間、行き先を覚えておく */
   const [pendingTab, setPendingTab] = useState<Tab | null>(null)
+  // 設定の画面で「戻る」を押した時に、直前に見ていたタブへ戻す
+  const [backTab, setBackTab] = useState<Tab>('capture')
   const [member, setMember] = useState(loadMember)
   const { leads, trash, unsyncedCount, reload, add, update, moveToTrash, restore, purge, moveTo, renameMember } = useLeads()
   const shared = useSharedSettings()
@@ -45,6 +47,7 @@ export default function App() {
 
   const goTab = (next: Tab) => {
     if (next === tab) return
+    if (next === 'settings') setBackTab(tab)
     // 設定の画面から離れる時、保存していない変更があれば「変更を保存しますか？」を出す
     if (tab === 'settings' && hasUnsavedChanges()) {
       setPendingTab(next)
@@ -62,7 +65,13 @@ export default function App() {
 
   return (
     <main className="app">
-      <Header auth={auth} sync={sync} unsyncedCount={unsyncedCount} />
+      <Header
+        view={tab === 'settings' ? 'settings' : 'home'}
+        onToggleSettings={() => goTab(tab === 'settings' ? backTab : 'settings')}
+        auth={auth}
+        sync={sync}
+        unsyncedCount={unsyncedCount}
+      />
 
       {/* 電波がない場所でも登録できることを伝える。ネットにつながると自動で同期する */}
       {!online && (

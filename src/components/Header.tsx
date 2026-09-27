@@ -6,17 +6,20 @@ import { useI18n } from '../i18n/useI18n.ts'
 import { authorLabel, currentAuthor } from '../device.ts'
 import { MAX_DEVICES } from '../devices.ts'
 import { useOnline } from '../hooks/useOnline.ts'
+import { GearIcon } from './GearIcon.tsx'
 import { GoogleLogo } from './GoogleLogo.tsx'
 import { driveConfig } from '../drive.ts'
 
 interface Props {
+  view: 'home' | 'settings'
+  onToggleSettings: () => void
   auth: GoogleAuth
   sync: SyncState
   unsyncedCount: number
 }
 
-/** アプリ名・Googleログインボタン（設定・ヘルプは下のナビゲーションにある） */
-export function Header({ auth, sync, unsyncedCount }: Props) {
+/** アプリ名・設定ボタン（設定の画面では「戻る」）・Googleログインボタン。ヘルプは、設定の中と下のナビにある */
+export function Header({ view, onToggleSettings, auth, sync, unsyncedCount }: Props) {
   const { t } = useI18n()
   const { account, connecting, login } = auth
   const [accountOpen, setAccountOpen] = useState(false)
@@ -28,7 +31,7 @@ export function Header({ auth, sync, unsyncedCount }: Props) {
 
   return (
     <>
-      <header className="topbar">
+      <header className={`topbar${view === 'settings' ? ' topbar-settings' : ''}`}>
         <div className="brand">
           <img className="brand-logo" src="./icon-192.png" alt="" />
           <div className="brand-text">
@@ -37,6 +40,15 @@ export function Header({ auth, sync, unsyncedCount }: Props) {
           </div>
         </div>
         <div className="topbar-actions">
+          {view === 'home' ? (
+            <button className="icon-button" onClick={onToggleSettings} aria-label={t('header.openSettings')} title={t('header.settings')}>
+              <GearIcon />
+            </button>
+          ) : (
+            <button className="back-button" onClick={onToggleSettings}>
+              {t('header.back')}
+            </button>
+          )}
           <button
             className={`google-button${live ? ' google-button-live' : ''}`}
             disabled={connecting}
