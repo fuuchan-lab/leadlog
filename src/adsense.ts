@@ -20,3 +20,6 @@ export function isAndroidApp(): boolean {
     return fromApp
   }
 }
+
+/** 広告のスクリプトをこの画面で読み込んだか（読み込んだ後で AI を使い始めたら、画面を読み込み直して外す） */
+export const adScriptLoaded = () => document.querySelector('script[src*="pagead2.googlesyndication.com"]') !== null

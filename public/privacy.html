@@ -15,23 +15,36 @@
     <section lang="ja">
       <h1>プライバシーポリシー（リードログ）</h1>
       <p>リードログ（以下「本アプリ」）は、展示会で名刺・バッジを交換した方の情報（リード）を記録するためのアプリです。</p>
+      <p>最終更新：2026年9月30日（AI による読み取りについて追記）</p>
       <h2>扱う情報</h2>
       <ul>
         <li>名刺・展示会バッジの画像と、そこから読み取った文字（氏名、会社名、部署名、役職、所在地の都道府県・市区町村、電話番号、メールアドレス）</li>
         <li>利用者が入力したメモ、重要度、顧客の種類、興味のある分野、次のアクション</li>
         <li>登録・更新の日時と、登録した人の名前・端末の種類・端末ID（本アプリが端末ごとに作る識別子）</li>
         <li>Google アカウントのメールアドレス・名前・プロフィール画像（ログイン中の表示のため）</li>
+        <li>AI で読み取る設定をした場合の、Anthropic の API キー（全員共通の設定として保存）</li>
       </ul>
       <h2>保存先</h2>
       <ul>
         <li>利用している端末のブラウザ内（IndexedDB・localStorage）</li>
         <li>利用者がログインした Google アカウントの Google ドライブの「LeadLog」フォルダー</li>
       </ul>
-      <p>本アプリの開発者が運営するサーバーはなく、開発者が上記の情報を受け取ることはありません。文字の読み取り（OCR）は端末の中で行い、画像を外部に送信しません（初回のみ、読み取り用のデータを配信サイト cdn.jsdelivr.net からダウンロードします）。</p>
+      <p>本アプリの開発者が運営するサーバーはなく、開発者が上記の情報を受け取ることはありません。</p>
+      <h2>文字の読み取り</h2>
+      <p>標準では、文字の読み取り（OCR）は端末の中で行い、画像を外部に送信しません（初回のみ、読み取り用のデータを配信サイト cdn.jsdelivr.net からダウンロードします）。</p>
+      <h3>AI による読み取り（任意）</h3>
+      <p>設定の「AIで読み取る（Claude）」に、利用者（利用する会社）が自ら契約した Anthropic の API キーを入れた場合に限り、名刺・バッジの読み取りに Anthropic, PBC の AI（Claude）を使います。この場合の扱いは次のとおりです。</p>
+      <ul>
+        <li><strong>送る内容</strong>：読み取る名刺・バッジ1枚の、補正後の画像だけです。名刺の範囲に切り抜いた画像で、撮影場所などの位置情報（Exif）は含みません。登録済みのリード、メモ、登録者名、端末の情報、Google アカウントの情報は送りません。</li>
+        <li><strong>送り先</strong>：端末から Anthropic の API（api.anthropic.com）へ、暗号化された通信（HTTPS）で直接送ります。本アプリの開発者や他のサーバーは経由しません。読み取った結果は端末に戻り、以降は上記の保存先にだけ保存されます。</li>
+        <li><strong>Anthropic での扱い</strong>：送った画像と読み取り結果は、API キーを発行した会社と Anthropic との契約（商用利用規約）と <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">Anthropic のプライバシーポリシー</a>に従って扱われます。商用利用規約では、API で送った内容は Anthropic の AI の学習に使われないとされています。保存期間などの詳細は Anthropic の規約をご確認ください。</li>
+        <li><strong>API キーの保護</strong>：キーは全員共通の設定として、端末の中と、ログインした Google アカウントの Google ドライブ（本アプリが作ったファイルだけに限られる権限）に保存し、画面には末尾4文字だけを表示します。AI で読み取る設定がある間は、ウェブ版でも広告を表示しません（広告のスクリプトがキーや読み取った内容に触れられないようにするため）。</li>
+        <li><strong>使わない場合</strong>：キーを削除すると、全端末で端末の中の OCR だけで読み取ります。電波が無い時や AI で読み取れなかった時も、端末の中の OCR を使います。</li>
+      </ul>
       <h2>Google のデータの利用</h2>
       <p>本アプリは Google ドライブへのアクセス権（drive.file：本アプリが作成したファイルだけに限られます）と、プロフィール情報を利用します。これらは上記の保存・表示のためだけに使い、第三者に提供しません。</p>
       <h2>広告</h2>
-      <p>ウェブ版では、画面の下に Google AdSense の広告を表示することがあります。Google などの広告配信事業者は、Cookie などを使って、利用者の過去のアクセス情報に基づく広告を表示することがあります。本アプリで記録した内容（写真・記録・位置情報など）が広告に使われたり、広告配信事業者に送られたりすることはありません。広告のパーソナライズは <a href="https://adssettings.google.com" target="_blank" rel="noopener">Google の広告設定</a> でオフにできます。Android アプリ版では広告を表示しません。</p>
+      <p>ウェブ版では、画面の下に Google AdSense の広告を表示することがあります。Google などの広告配信事業者は、Cookie などを使って、利用者の過去のアクセス情報に基づく広告を表示することがあります。本アプリで記録した内容（写真・記録・位置情報など）が広告に使われたり、広告配信事業者に送られたりすることはありません。広告のパーソナライズは <a href="https://adssettings.google.com" target="_blank" rel="noopener">Google の広告設定</a> でオフにできます。Android アプリ版と、AI で読み取る設定がある間は広告を表示しません。</p>
       <h2>削除</h2>
       <p>本アプリでリードを削除すると、同じアカウントの端末と Google ドライブからも削除されます。Google ドライブの「LeadLog」フォルダーを削除すると、すべてのデータを削除できます。</p>
       <h2>取得した個人情報の取り扱い</h2>
@@ -40,23 +53,36 @@
     <section lang="en">
       <h1>Privacy Policy (LeadLog)</h1>
       <p>LeadLog ("the app") records information about people you meet at trade shows (leads).</p>
+      <p>Last updated: September 30, 2026 (added AI reading)</p>
       <h2>Information handled</h2>
       <ul>
         <li>Images of business cards and show badges, and the text read from them (name, company, department, title, prefecture/city, phone number, email address)</li>
         <li>Notes, priority, customer type, areas of interest and next steps entered by the user</li>
         <li>Date and time a lead was added or edited, and the name, device type and device ID (an identifier created by the app for each device) of the person who added it</li>
         <li>Your Google account email, name and profile picture (to show who is logged in)</li>
+        <li>If AI reading is set up, the Anthropic API key (stored as a shared setting)</li>
       </ul>
       <h2>Where data is stored</h2>
       <ul>
         <li>In the browser on your device (IndexedDB, localStorage)</li>
         <li>In the "LeadLog" folder in the Google Drive of the Google account you log in with</li>
       </ul>
-      <p>The developer runs no server and never receives this information. Text recognition (OCR) runs on your device; images are not sent anywhere (the recognition data is downloaded once from cdn.jsdelivr.net).</p>
+      <p>The developer runs no server and never receives this information.</p>
+      <h2>Text recognition</h2>
+      <p>By default, text recognition (OCR) runs on your device and images are not sent anywhere (the recognition data is downloaded once from cdn.jsdelivr.net).</p>
+      <h3>AI reading (optional)</h3>
+      <p>Only if you (your company) enter an Anthropic API key under your own contract in Settings → "Read with AI (Claude)", cards and badges are read with Anthropic, PBC's AI (Claude). In that case:</p>
+      <ul>
+        <li><strong>What is sent</strong>: only the corrected image of the one card or badge being read, cropped to the card and without location data (Exif). Saved leads, notes, staff names, device information and Google account information are never sent.</li>
+        <li><strong>Where it goes</strong>: directly from your device to Anthropic's API (api.anthropic.com) over encrypted HTTPS, not through the developer or any other server. The result returns to your device and is stored only in the places listed above.</li>
+        <li><strong>How Anthropic handles it</strong>: under the agreement between the key owner and Anthropic (Commercial Terms) and <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">Anthropic's Privacy Policy</a>. Under the Commercial Terms, content sent through the API is not used to train Anthropic's models. See Anthropic's terms for retention and other details.</li>
+        <li><strong>Protecting the key</strong>: the key is stored on devices and in the Google Drive of the logged-in account (with access limited to files the app creates), and only its last 4 characters are shown. While AI reading is set up, the web version shows no ads, so ad scripts cannot reach the key or the scanned content.</li>
+        <li><strong>If not used</strong>: removing the key returns every device to on-device OCR. With no signal, or if the AI cannot read a card, on-device OCR is used.</li>
+      </ul>
       <h2>Use of Google data</h2>
       <p>The app uses Google Drive access limited to files it creates (drive.file) and your basic profile, only for the storage and display described above, and does not share them with third parties.</p>
       <h2>Advertising</h2>
-      <p>The web version may show Google AdSense ads at the bottom of the screen. Google and other ad vendors may use cookies to serve ads based on a user's earlier visits. What you record in the app (photos, records, locations and so on) is never used for advertising or sent to ad vendors. Ad personalization can be turned off in <a href="https://adssettings.google.com" target="_blank" rel="noopener">Google's ad settings</a>. The Android app shows no ads.</p>
+      <p>The web version may show Google AdSense ads at the bottom of the screen. Google and other ad vendors may use cookies to serve ads based on a user's earlier visits. What you record in the app (photos, records, locations and so on) is never used for advertising or sent to ad vendors. Ad personalization can be turned off in <a href="https://adssettings.google.com" target="_blank" rel="noopener">Google's ad settings</a>. No ads are shown in the Android app, or while AI reading is set up.</p>
       <h2>Deletion</h2>
       <p>Deleting a lead in the app also deletes it on other devices of the same account and in Google Drive. Deleting the "LeadLog" folder in Google Drive deletes all data.</p>
       <h2>Personal information you collect</h2>

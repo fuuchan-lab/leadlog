@@ -120,6 +120,12 @@ export function useSharedSettings() {
     [changeList, settings, persist],
   )
 
+  /** AI で読み取るための API キーを変える（空にすると AI を使わない） */
+  const setAiKey = useCallback(
+    (key: string) => persist({ ...settings, aiKey: key.trim(), aiKeyUpdatedAt: Date.now() }),
+    [settings, persist],
+  )
+
   const importance = useMemo(() => visibleCategories(settings.importance), [settings.importance])
   const customerTypes = useMemo(() => visibleCategories(settings.customerTypes), [settings.customerTypes])
   const interests = useMemo(() => visibleCategories(settings.interests), [settings.interests])
@@ -143,6 +149,7 @@ export function useSharedSettings() {
     createExhibition,
     updateExhibition,
     removeExhibition,
+    setAiKey,
   }
 }
 

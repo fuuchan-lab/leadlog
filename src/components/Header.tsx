@@ -45,8 +45,18 @@ export function Header({ view, onToggleSettings, auth, sync, unsyncedCount }: Pr
               <GearIcon />
             </button>
           ) : (
-            <button className="back-button" onClick={onToggleSettings}>
-              {t('header.back')}
+            <button className="icon-button back-icon" onClick={onToggleSettings} aria-label={t('header.back')} title={t('header.back')}>
+              {/* 戻る（左向きの矢印）。歯車と同じ大きさにして、設定の画面でもボタンが1段に収まるようにする */}
+              <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false">
+                <path
+                  d="M15 5l-7 7 7 7"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </button>
           )}
           <button

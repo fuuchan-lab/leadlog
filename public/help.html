@@ -124,6 +124,7 @@
             <li><a href="#ja-excel">Excel に書き出す</a></li>
             <li><a href="#ja-howto">活用のコツ（展示会の前・会期中・後）</a></li>
             <li><a href="#ja-trouble">困ったとき</a></li>
+            <li><a href="#ja-privacy">データと AI について</a></li>
           </ol>
         </nav>
 
@@ -164,6 +165,17 @@
             文字の読み取りには、初回だけ数十MBのデータが必要です。展示会場は電波が弱いことが多いので、
             <strong>Wi-Fi のある場所で</strong> 設定 →「OCRの準備（オフライン用）」を押しておきましょう。
           </p>
+          <h3>⑦ AI で読み取る（任意・おすすめ）</h3>
+          <p>
+            設定 →「AIで読み取る（Claude）」に Anthropic の API キーを入れると、名刺・バッジを AI で読み取ります。
+            端末の中の OCR より、<strong>氏名</strong>の読み取りや、会社名・部署・役職の振り分けがずっと正確になります。
+            キーは1台で入れれば、同期で全端末に配られます。<kbd>接続を確かめる</kbd>で使えるか確認できます。
+          </p>
+          <ul>
+            <li>キーは <a href="https://console.anthropic.com" target="_blank" rel="noopener">Anthropic Console</a> で作ります。料金は読み取り1枚あたり数円程度で、キーを作ったアカウントに請求されます。</li>
+            <li>LeadLog 専用のキーを作り、Console で<strong>利用上限（月の上限額）</strong>を設定しておくと安心です。不要になったら Console でキーを無効にしてください。</li>
+            <li>読み取りの時に送るのは、補正した名刺1枚の画像だけです。扱いは下の「<a href="#ja-privacy">データと AI について</a>」をご覧ください。</li>
+          </ul>
         </section>
 
         <section id="ja-scan">
@@ -186,7 +198,8 @@
               <li>縦書きの名刺は、<kbd>↻ 回転</kbd>で横向きにしてから読み取る。</li>
             </ul>
           </div>
-          <div class="note">読み取りは完全ではありません。特に氏名は、保存する前に必ず確認してください。「読み取った文字を見る」で OCR の結果全体も確認できます。</div>
+          <div class="note">読み取りは完全ではありません（AI でも間違えることがあります）。特に氏名は、保存する前に必ず確認してください。「読み取った文字を見る」で読み取った文字全体も確認できます。</div>
+          <p>AI で読み取る設定があると「AIで読み取っています…」と表示され、終わると「✨ 読み取りました」と出ます。電波が無い時や AI で読み取れなかった時は、自動で端末の中の OCR に切り替えて読み取ります（その旨を表示します）。</p>
           <p>同じ方（同じメールアドレス、または同じ氏名と会社名）がすでに登録されていると、「同じ方のリードがすでにあります」と表示されます。</p>
         </section>
 
@@ -286,6 +299,8 @@
             <li>四隅がずれていたら、丸をドラッグして直してから読み取ります。</li>
             <li>写真がぶれている・暗いときは <kbd>📷 再撮影</kbd>。上の「きれいに読み取るコツ」も参考に。</li>
             <li>読み取れなかった項目は、手で入力してください。</li>
+            <li>氏名がうまく読めない場合は、設定の「AIで読み取る（Claude）」を使うと大きく改善します。</li>
+            <li>「AIのAPIキーが使えなかった」と出る場合は、設定の <kbd>接続を確かめる</kbd>で確認し、キーを入れ直してください（Console でキーが無効になっている・利用上限に達している、なども原因になります）。</li>
           </ul>
           <h3>パソコンのカメラで撮ると、名刺までぼやける</h3>
           <p>
@@ -306,11 +321,32 @@
             <li>ログインボタン → <kbd>今すぐ同期</kbd>。全員が同じ Google アカウントでログインしているかも確認してください。</li>
             <li>開いている展示会が違うと、一覧に出ません（一覧の <kbd>すべての展示会</kbd>で確認）。</li>
           </ul>
-          <h3>データについて</h3>
+        </section>
+
+        <section id="ja-privacy">
+          <h2>10. データと AI について</h2>
           <p>
-            データは、端末と、ログインした Google アカウントの Google ドライブにだけ保存されます。詳しくは
-            <a href="./privacy.html">プライバシーポリシー</a>をご覧ください。
+            リードのデータは、端末と、ログインした Google アカウントの Google ドライブにだけ保存されます。
+            本アプリの開発者のサーバーはなく、開発者がデータを受け取ることはありません。
           </p>
+          <h3>AI で読み取る時に外に出るもの</h3>
+          <ul>
+            <li>送るのは、<strong>読み取る名刺・バッジ1枚の補正後の画像だけ</strong>です（名刺の範囲に切り抜き、撮影場所などの位置情報は含みません）。</li>
+            <li>登録済みのリード、メモ、登録者名、端末や Google アカウントの情報は<strong>送りません</strong>。</li>
+            <li>端末から Anthropic の API へ暗号化通信（HTTPS）で直接送り、ほかのサーバーは通りません。</li>
+            <li>Anthropic の商用利用規約では、API で送った内容は AI の学習に使われないとされています。保存期間などは Anthropic の規約・プライバシーポリシーに従います。</li>
+          </ul>
+          <h3>情報を守るための仕組み</h3>
+          <ul>
+            <li>AI で読み取る設定がある間は、ウェブ版でも<strong>広告を表示しません</strong>（広告のスクリプトが、キーや読み取った内容に触れられないようにするため）。</li>
+            <li>API キーは画面に末尾4文字だけを表示します。キーは共有アカウントでログインした端末と、その Google ドライブにだけ保存されます。</li>
+            <li>AI を使いたくない場合は、設定で <kbd>キーを削除</kbd>すれば、全端末で端末の中の OCR だけになります。</li>
+          </ul>
+          <div class="note">
+            会社の方針で、外部の AI に個人情報を送ることに制限がある場合は、情報システム・個人情報の担当の方に確認してから使ってください。
+            より厳しい管理が必要な場合、Anthropic と「データを保存しない（Zero Data Retention）」契約を結べることがあります。
+          </div>
+          <p>詳しくは <a href="./privacy.html">プライバシーポリシー</a>をご覧ください。</p>
         </section>
         <a class="back" href="./">← アプリに戻る</a>
       </div>
@@ -376,6 +412,7 @@
           <h2>5. Making the most of it</h2>
           <ul>
             <li><strong>Before the show</strong>: create the show (copy last year's), register the products you exhibit as areas of interest, agree on what each priority level means.</li>
+            <li><strong>Before the show</strong> (optional, recommended): enter an Anthropic API key under Settings → "Read with AI (Claude)" to read cards with AI. Names and the company/department/title fields are read far more accurately. Create a dedicated key with a monthly spend limit in the <a href="https://console.anthropic.com" target="_blank" rel="noopener">Anthropic Console</a>.</li>
             <li><strong>During the show</strong>: add each lead right after the conversation, write notes with <strong>BANT</strong> (Budget, Authority, Needs, Timeframe), set next steps with an owner and due date for hot leads, and use the dashboard to adjust staffing.</li>
             <li><strong>After the show</strong>: export to Excel, follow up by priority, clean up possible duplicates, and track next steps.</li>
           </ul>
@@ -395,7 +432,18 @@
               close — try about 20-30cm (8-12in) away so the camera can focus.
             </li>
             <li>Leads from others not showing: check that the button glows green, tap <kbd>Sync now</kbd>, and check the open show (use <kbd>All shows</kbd> in the list).</li>
+            <li>Names read badly: turn on "Read with AI (Claude)" in Settings. If you see "the AI API key did not work", use <kbd>Test connection</kbd> and re-enter the key.</li>
             <li>Data is stored only on your devices and in your Google Drive. See the <a href="./privacy.html">Privacy Policy</a>.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>7. Data and AI</h2>
+          <ul>
+            <li>With AI reading on, <strong>only the corrected image of the one card being read</strong> is sent, directly from your device to Anthropic's API over HTTPS (cropped to the card, no location data). Saved leads, notes, staff names, device and Google account information are never sent.</li>
+            <li>Under Anthropic's Commercial Terms, content sent through the API is not used to train its models; retention follows Anthropic's terms and privacy policy.</li>
+            <li>While AI reading is set up, the web version shows <strong>no ads</strong>, so ad scripts cannot reach the key or scanned content. Only the last 4 characters of the key are shown.</li>
+            <li>Remove the key in Settings to go back to on-device OCR on every device. If your company restricts sending personal data to external AI, check with your IT or privacy team first; Anthropic may offer Zero Data Retention agreements.</li>
           </ul>
         </section>
         <a class="back" href="./">← Back to the app</a>

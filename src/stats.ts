@@ -9,6 +9,8 @@ export interface HourRow {
   hour: number
   /** 会期の各日の件数（day0, day1, …） */
   [day: `day${number}`]: number
+  /** 会期の各日の、重要度 ID → 件数（グラフの棒を重要度で色分けするため。未選択は ''） */
+  importance: Record<string, number>[]
 }
 
 export interface Dashboard {
@@ -37,7 +39,7 @@ export function buildDashboard(leads: Lead[], ex: Exhibition, now = Date.now()):
   const days = exhibitionDays(ex)
   const hours = Array.from({ length: Math.max(1, ex.endHour - ex.startHour) }, (_, i) => ex.startHour + i)
   const rows: HourRow[] = hours.map((hour) => {
-    const row: HourRow = { hour }
+    const row: HourRow = { hour, importance: days.map(() => ({})) }
     days.forEach((_, d) => (row[`day${d}`] = 0))
     return row
   })
@@ -84,8 +86,10 @@ export function buildDashboard(leads: Lead[], ex: Exhibition, now = Date.now()):
     perDay[d]++
     const hour = new Date(at).getHours()
     const row = rows.find((r) => r.hour === hour)
-    if (row) row[`day${d}`]++
-    else outside++
+    if (row) {
+      row[`day${d}`]++
+      row.importance[d][l.importance] = (row.importance[d][l.importance] ?? 0) + 1
+    } else outside++
   }
 
   const todayIndex = dayIndexOf(now)

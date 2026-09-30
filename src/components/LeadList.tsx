@@ -2,12 +2,13 @@ import { useMemo, useState } from 'react'
 import { authorLabel } from '../device.ts'
 import { findDuplicates } from '../duplicates.ts'
 import { belongsTo, isUnassigned, type Exhibition } from '../exhibitions.ts'
-import { TRASH_DAYS, type ExhibitionRef } from '../hooks/useLeads.ts'
+import { TRASH_DAYS, type ExhibitionRef, type PhotoReplacement } from '../hooks/useLeads.ts'
 import { formatDateTime } from '../format.ts'
 import { useI18n } from '../i18n/useI18n.ts'
 import type { Category } from '../settings.ts'
 import { hasContent, type Lead, type LeadFields } from '../types.ts'
 import { CategoryTag } from './CategoryPicker.tsx'
+import { EditPhoto } from './EditPhoto.tsx'
 import { LeadForm, type FormLists } from './LeadForm.tsx'
 import { LeadPhoto } from './LeadPhoto.tsx'
 import { LeadPopup } from './LeadPopup.tsx'
@@ -29,12 +30,14 @@ interface Props {
   allExhibitions: Exhibition[]
   /** 移し先に選べる展示会（削除していないもの） */
   exhibitions: Exhibition[]
-  /** 内容を直す。target を渡すと別の展示会に移す */
-  onUpdate: (lead: Lead, fields: LeadFields, target?: ExhibitionRef) => Promise<void>
+  /** 内容を直す。target を渡すと別の展示会に移す。photo を渡すと画像を差し替える */
+  onUpdate: (lead: Lead, fields: LeadFields, target?: ExhibitionRef, photo?: PhotoReplacement) => Promise<void>
   onTrash: (list: Lead[]) => Promise<void>
   onRestore: (list: Lead[]) => Promise<void>
   onPurge: (list: Lead[]) => Promise<void>
   onMove: (list: Lead[], target: ExhibitionRef) => Promise<void>
+  /** 写真を撮り直した時に AI で読み取るための API キー */
+  aiKey: string
 }
 
 type Scope = 'this' | 'unassigned' | 'all' | 'trash'
@@ -83,13 +86,19 @@ export function LeadList({
   onRestore,
   onPurge,
   onMove,
+  aiKey,
 }: Props) {
   const { t, lang } = useI18n()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<string | null>(null)
   const [limit, setLimit] = useState(PAGE)
-  /** 編集中のリード。exhibitionId は移し先（未分類は UNASSIGNED） */
-  const [editing, setEditing] = useState<{ id: string; fields: LeadFields; exhibitionId: string } | null>(null)
+  /** 編集中のリード。exhibitionId は移し先（未分類は UNASSIGNED）。photo は撮り直した画像（保存まで反映しない） */
+  const [editing, setEditing] = useState<{
+    id: string
+    fields: LeadFields
+    exhibitionId: string
+    photo?: PhotoReplacement
+  } | null>(null)
   const [popup, setPopup] = useState<Lead | null>(null)
   const [scopeState, setScope] = useState<Scope>('this')
   const [moveTarget, setMoveTarget] = useState('')
@@ -125,6 +134,8 @@ export function LeadList({
       setBusy(false)
     }
   }
+
+  const startEdit = (l: Lead) => setEditing({ id: l.id, fields: pick(l), exhibitionId: currentExhibitionOf(l) })
 
   const duplicates = useMemo(() => findDuplicates(leads), [leads])
   const byId = (list: Category[], id: string) => list.find((c) => c.id === id)
@@ -207,7 +218,7 @@ export function LeadList({
           const dup = duplicates.get(l.id)
           const isEditing = editing?.id === l.id
           return (
-            <li key={l.id}>
+            <li key={l.id} id={`lead-${l.id}`}>
               <div className="row">
                 <span className="muted small">
                   {formatDateTime(l.metAt || l.createdAt, lang)} · {t('list.by', { who: l.staff || authorLabel(l.createdBy) })}
@@ -230,10 +241,7 @@ export function LeadList({
                 ) : (
                   <span>
                     {!isEditing && (
-                      <button
-                        className="link"
-                        onClick={() => setEditing({ id: l.id, fields: pick(l), exhibitionId: currentExhibitionOf(l) })}
-                      >
+                      <button className="link" onClick={() => startEdit(l)}>
                         {t('common.edit')}
                       </button>
                     )}
@@ -259,7 +267,27 @@ export function LeadList({
                     member={member}
                     leads={leads}
                     editingId={l.id}
-                    photoId={l.photoId ?? undefined}
+                    photo={
+                      <EditPhoto
+                        photoId={l.photoId ?? undefined}
+                        photo={editing.photo?.blob ?? null}
+                        aiKey={aiKey}
+                        onPhoto={(blob) =>
+                          setEditing((cur) => (cur && cur.id === l.id ? { ...cur, photo: { blob, ocrText: '' } } : cur))
+                        }
+                        onOcr={(text, found) =>
+                          setEditing((cur) => {
+                            if (!cur || cur.id !== l.id || !cur.photo) return cur
+                            // 入力済みの欄は変えず、空欄だけ読み取った内容で埋める
+                            const fields = { ...cur.fields }
+                            for (const [k, v] of Object.entries(found) as [keyof typeof found, string][]) {
+                              if (!fields[k].trim() && v) fields[k] = v
+                            }
+                            return { ...cur, fields, photo: { ...cur.photo, ocrText: text } }
+                          })
+                        }
+                      />
+                    }
                   />
                   {/* 登録した展示会を変える（未分類のリードを展示会に入れる時など） */}
                   <label className="field">
@@ -285,7 +313,12 @@ export function LeadList({
                       disabled={!hasContent(editing.fields)}
                       onClick={async () => {
                         const moved = editing.exhibitionId !== currentExhibitionOf(l)
-                        await onUpdate(l, editing.fields, moved ? refOf(editing.exhibitionId === UNASSIGNED ? '' : editing.exhibitionId) : undefined)
+                        await onUpdate(
+                          l,
+                          editing.fields,
+                          moved ? refOf(editing.exhibitionId === UNASSIGNED ? '' : editing.exhibitionId) : undefined,
+                          editing.photo,
+                        )
                         setEditing(null)
                       }}
                     >
@@ -407,6 +440,27 @@ export function LeadList({
           nextActions={allNextActions}
           duplicates={duplicates.get(popup.id) ?? []}
           onClose={() => setPopup(null)}
+          onEdit={
+            scope === 'trash'
+              ? undefined
+              : () => {
+                  startEdit(popup)
+                  setPopup(null)
+                  // 一覧の中で開いた編集の欄を見せる
+                  requestAnimationFrame(() =>
+                    document.getElementById(`lead-${popup.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+                  )
+                }
+          }
+          onDelete={
+            scope === 'trash'
+              ? undefined
+              : () => {
+                  if (!confirm(t('list.confirmDelete'))) return
+                  setPopup(null)
+                  void run(() => onTrash([popup]))
+                }
+          }
         />
       )}
     </section>

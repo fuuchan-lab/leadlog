@@ -32,6 +32,12 @@ export interface SharedSettings {
   /** 次のアクションの担当を選べる、登録者（社員）の一覧 */
   members: Category[]
   membersUpdatedAt: number
+  /**
+   * 名刺・バッジを AI（Claude）で読み取るための Anthropic の API キー。空なら端末の中の OCR で読み取る。
+   * 全端末で使えるよう共有する（共有アカウントでログインした端末からは見える）
+   */
+  aiKey: string
+  aiKeyUpdatedAt: number
 }
 
 export type CategoryKind = 'importance' | 'customerTypes' | 'interests' | 'nextActions' | 'members'
@@ -85,6 +91,8 @@ export function defaultSettings(lang: 'ja' | 'en'): SharedSettings {
     nextActionsUpdatedAt: 0,
     members: [],
     membersUpdatedAt: 0,
+    aiKey: '',
+    aiKeyUpdatedAt: 0,
   }
 }
 
@@ -114,6 +122,8 @@ export function parseSettings(text: string, fallback: SharedSettings): SharedSet
     nextActionsUpdatedAt: Number(data.nextActionsUpdatedAt) || 0,
     members: Array.isArray(data.members) ? data.members.filter(isCategory) : fallback.members,
     membersUpdatedAt: Number(data.membersUpdatedAt) || 0,
+    aiKey: typeof data.aiKey === 'string' ? data.aiKey : '',
+    aiKeyUpdatedAt: Number(data.aiKeyUpdatedAt) || 0,
   }
 }
 
@@ -128,6 +138,7 @@ export function mergeSettings(local: SharedSettings, remote: SharedSettings): Sh
   const interests = remote.interestsUpdatedAt > local.interestsUpdatedAt ? remote : local
   const actions = remote.nextActionsUpdatedAt > local.nextActionsUpdatedAt ? remote : local
   const members = remote.membersUpdatedAt > local.membersUpdatedAt ? remote : local
+  const ai = remote.aiKeyUpdatedAt > local.aiKeyUpdatedAt ? remote : local
   return {
     exhibitions: mergeExhibitions(local.exhibitions, remote.exhibitions),
     importance: imp.importance,
@@ -140,6 +151,8 @@ export function mergeSettings(local: SharedSettings, remote: SharedSettings): Sh
     nextActionsUpdatedAt: actions.nextActionsUpdatedAt,
     members: members.members,
     membersUpdatedAt: members.membersUpdatedAt,
+    aiKey: ai.aiKey,
+    aiKeyUpdatedAt: ai.aiKeyUpdatedAt,
   }
 }
 

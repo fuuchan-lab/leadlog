@@ -47,6 +47,8 @@ test('会期中のリードを、時間帯 × 日で数える', () => {
   assert.deepEqual(d.perDay, [2, 1, 1])
   assert.equal(d.rows.length, 7)
   assert.equal(d.rows[0].day0, 2)
+  // 棒の色分け用の、重要度別の件数（未選択は ''）
+  assert.deepEqual(d.rows[0].importance, [{ 'imp-a': 1, '': 1 }, {}, {}])
   assert.equal(d.rows[6].day1, 1)
   assert.equal(d.outside, 1)
   assert.equal(d.todayIndex, 1)

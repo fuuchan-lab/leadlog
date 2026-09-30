@@ -351,16 +351,6 @@ button.link.move-button {
   min-width: 0;
 }
 
-/* 設定の画面は右側のボタンが3つ（ヘルプ・戻る・ログイン）並ぶ。狭い画面ではアプリ名の下の段に回し、名前が切れないようにする */
-@media (max-width: 440px) {
-  .topbar-settings {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .topbar-settings .topbar-actions {
-    justify-content: flex-end;
-  }
-}
 
 .topbar-actions {
   display: flex;
@@ -389,6 +379,19 @@ button.link.move-button {
 .icon-button:hover,
 .icon-button:focus-visible {
   color: var(--accent);
+}
+
+/* 設定の画面の「戻る」（矢印のアイコン） */
+.back-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--accent);
+}
+.back-icon:hover,
+.back-icon:focus-visible {
+  background: var(--info-bg);
 }
 
 .google-button {
@@ -548,24 +551,6 @@ textarea.sticky::placeholder {
   font-size: 0.9rem;
   white-space: pre-wrap;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-/* 設定画面から戻るボタン */
-.back-button {
-  min-height: 44px;
-  padding: 8px 18px;
-  border: 1px solid var(--accent);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--accent);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.back-button:hover,
-.back-button:focus-visible {
-  background: var(--accent);
-  color: var(--accent-text);
 }
 
 .chart-loading {
@@ -841,6 +826,64 @@ textarea.sticky::placeholder {
 }
 .lead-chart {
   margin: 4px -6px 0;
+}
+/* 設定の「AIで読み取る」 */
+.ai-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ai-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+/* リードの詳細の下の「削除」「編集」 */
+.popup-actions {
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+.popup-actions button {
+  min-width: 96px;
+}
+.chart-legend {
+  justify-content: center;
+  margin-top: 2px;
+  font-size: 0.8rem;
+}
+.chart-note {
+  margin: 4px 6px 0;
+  text-align: center;
+}
+/* グラフの棒に触れた時の、その時間帯の日ごと・重要度ごとの件数 */
+.chart-tooltip {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 12px;
+}
+.chart-tooltip p {
+  margin: 2px 0;
+}
+.chart-tooltip-title {
+  font-weight: 600;
+}
+.chart-tooltip-today {
+  font-weight: 600;
+}
+.chart-tooltip-part {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+  font-weight: 400;
+}
+.chart-tooltip .chip-dot {
+  width: 8px;
+  height: 8px;
 }
 .breakdown {
   display: grid;
@@ -1189,6 +1232,38 @@ input[type='datetime-local'] {
   text-overflow: ellipsis;
 }
 
+/* 読み取りの見出しの下の、登録先の展示会 */
+.capture-exhibition {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 4px 0 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+.capture-exhibition strong {
+  font-size: 1.1rem;
+  overflow-wrap: anywhere;
+}
+.capture-exhibition-label {
+  font-size: 0.85rem;
+}
+.capture-exhibition-none {
+  background: var(--caution-bg);
+  color: var(--caution-text);
+}
+.capture-exhibition-none strong {
+  font-size: 0.95rem;
+}
+
+/* 編集の「撮り直す」「画像を選ぶ」（写真のすぐ下） */
+.edit-photo-buttons {
+  margin-top: 8px;
+}
+
 /* 「再撮影」ボタン（写真のすぐ下） */
 .retake-button {
   width: 100%;
@@ -1453,16 +1528,21 @@ input[type='datetime-local'] {
   height: 40px;
 }
 .help-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  gap: 6px;
   text-decoration: none;
   color: var(--text);
 }
+/* 「?」と「ヘルプ・使い方」を1行に */
+.help-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+}
 .help-mark {
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--accent);
   color: var(--accent-text);
