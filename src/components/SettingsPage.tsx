@@ -116,14 +116,14 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhi
   return (
     <>
       <a className="card help-card" href={`./help.html?lang=${lang}`} target="_blank" rel="noopener">
-        <span className="help-mark" aria-hidden="true">
-          ?
-        </span>
-        <span>
+        {/* 「?」は見出しの左に並べる */}
+        <span className="help-head">
+          <span className="help-mark" aria-hidden="true">
+            ?
+          </span>
           <strong>{t('help.title')}</strong>
-          <br />
-          <span className="muted small">{t('help.subtitle')}</span>
         </span>
+        <span className="muted small">{t('help.subtitle')}</span>
       </a>
 
       <ExhibitionCard shared={shared} leads={leads} onOpened={onExhibitionOpened} />

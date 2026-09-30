@@ -1528,16 +1528,21 @@ input[type='datetime-local'] {
   height: 40px;
 }
 .help-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  gap: 6px;
   text-decoration: none;
   color: var(--text);
 }
+/* 「?」と「ヘルプ・使い方」を1行に */
+.help-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+}
 .help-mark {
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--accent);
   color: var(--accent-text);
