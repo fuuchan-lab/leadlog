@@ -11,16 +11,18 @@ interface Props {
   photo: Blob | null
   onPhoto: (blob: Blob) => void
   onOcr: (text: string, found: Extracted) => void
+  /** AI で読み取るための API キー */
+  aiKey: string
 }
 
 /**
  * 編集中のリードの、名刺・バッジの画像。「撮り直し」「画像を選ぶ」で差し替えられる
  * （手入力で登録したリードには、あとから画像を付けられる）。差し替えは編集を保存した時に反映する
  */
-export function EditPhoto({ photoId, photo, onPhoto, onOcr }: Props) {
+export function EditPhoto({ photoId, photo, onPhoto, onOcr, aiKey }: Props) {
   const { t } = useI18n()
   const [message, setMessage] = useState<ScanMessage>(null)
-  const scan = useCardScan({ onPhoto, onOcr, onMessage: setMessage })
+  const scan = useCardScan({ onPhoto, onOcr, onMessage: setMessage, aiKey, doneText: t('edit.ocrDone') })
   const [preview, setPreview] = useState<{ photo: Blob; url: string } | null>(null)
 
   useEffect(() => {
@@ -53,7 +55,7 @@ export function EditPhoto({ photoId, photo, onPhoto, onOcr }: Props) {
       {scan.progress}
       {message && (
         <p className={message.kind === 'ok' ? 'ok' : 'error'} role={message.kind === 'ok' ? 'status' : 'alert'}>
-          {message.kind === 'ok' ? t('edit.ocrDone') : message.text}
+          {message.text}
           {message.detail && (
             <>
               <br />

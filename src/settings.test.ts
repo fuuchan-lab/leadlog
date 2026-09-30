@@ -58,6 +58,17 @@ test('初めて使う端末の既定値（更新時刻 0）は、ドライブの
   assert.equal(mergeSettings(base, remote).importance[0].label, 'S')
 })
 
+test('AI の API キーは、新しく設定した方を採用する。以前の settings.json（キー無し）は空にする', () => {
+  const remote = { ...base, aiKey: 'sk-remote', aiKeyUpdatedAt: 10 }
+  assert.equal(mergeSettings(base, remote).aiKey, 'sk-remote')
+  // 端末で消した（空にした）のが新しければ、消した方を採用する
+  assert.equal(mergeSettings({ ...base, aiKey: '', aiKeyUpdatedAt: 20 }, remote).aiKey, '')
+  const legacy = JSON.parse(serializeSettings(base)) as Record<string, unknown>
+  delete legacy.aiKey
+  delete legacy.aiKeyUpdatedAt
+  assert.equal(parseSettings(JSON.stringify(legacy), base).aiKey, '')
+})
+
 test('追加・重複・名前の変更・削除・並べ替え', () => {
   const added = addCategory(base.customerTypes, '大学', 'new')
   assert.ok(added.ok)

@@ -14,6 +14,7 @@ type Stage =
   | { kind: 'loading' }
   | { kind: 'adjust'; image: RGBAImage; quad: Quad; found: boolean }
   | { kind: 'processing' }
+  | { kind: 'ai' }
   | { kind: 'ocr'; progress: OcrProgress }
 
 export type ScanMessage = { kind: 'ok' | 'error'; text: string; detail?: string } | null
@@ -27,6 +28,10 @@ interface Options {
   onMessage: (message: ScanMessage) => void
   /** 撮り直す直前（前の写真の読み取り結果を消すため） */
   onRetake?: () => void
+  /** AI で読み取るための API キー（空なら端末の中の OCR だけで読み取る） */
+  aiKey: string
+  /** 読み取り終わった時の知らせ（省略時は「読み取りました。内容を確認・修正…」） */
+  doneText?: string
 }
 
 /**
@@ -34,7 +39,7 @@ interface Options {
  * 撮影・画像を選ぶ → 四隅を合わせる → 書類のように補正 → 文字を読み取る。
  * elements（ファイル選択の入力欄・カメラ・範囲を合わせる画面）を、使う側の画面に置く
  */
-export function useCardScan({ onPhoto, onOcr, onMessage, onRetake }: Options) {
+export function useCardScan({ onPhoto, onOcr, onMessage, onRetake, aiKey, doneText }: Options) {
   const { t } = useI18n()
   const cameraRef = useRef<HTMLInputElement>(null)
   const pickRef = useRef<HTMLInputElement>(null)
@@ -87,23 +92,44 @@ export function useCardScan({ onPhoto, onOcr, onMessage, onRetake }: Options) {
     // 補正の計算で画面が固まる前に、「補正しています」を表示させる
     await new Promise((r) => setTimeout(r, 30))
     let canvas: HTMLCanvasElement
+    let photo: Blob
     try {
       canvas = toCanvas(makeDocument(image, quad, rotation))
-      onPhoto(await canvasToJpeg(canvas))
+      photo = await canvasToJpeg(canvas)
+      onPhoto(photo)
     } catch (e) {
       console.error('[scan-process]', e)
       setStage({ kind: 'idle' })
       onMessage({ kind: 'error', text: t('scan.failed'), detail: describeError(e) })
       return
     }
+    const done = doneText ?? t('ocr.done')
+    // AI が使える時（API キーがあり、ネットにつながっている）は AI で読み取る。
+    // 使えなかったら、端末の中の OCR で読み取る（その理由は知らせる）
+    let fellBack: string | null = null
+    if (aiKey && navigator.onLine) {
+      setStage({ kind: 'ai' })
+      try {
+        // AI の部品（SDK）は大きいので、使う時に読み込む
+        const { readCardWithAi } = await import('../scan/ai.ts')
+        const result = await readCardWithAi(photo, aiKey)
+        onOcr(result.text, result.fields)
+        onMessage({ kind: 'ok', text: `✨ ${done}` })
+        setStage({ kind: 'idle' })
+        return
+      } catch (e) {
+        console.error('[ai-read]', e)
+        fellBack = (e as { reason?: string }).reason === 'auth' ? t('ai.fellBackKey') : t('ai.fellBack')
+      }
+    }
     setStage({ kind: 'ocr', progress: { phase: 'loading', progress: 0 } })
     try {
       const result = await recognize(canvas, (progress) => setStage({ kind: 'ocr', progress }))
       onOcr(result.text, extractFields(result.lines))
-      onMessage({ kind: 'ok', text: t('ocr.done') })
+      onMessage({ kind: 'ok', text: fellBack ? `${fellBack} ${done}` : done })
     } catch (e) {
       console.error('[ocr]', e)
-      onMessage({ kind: 'error', text: t('ocr.failed'), detail: describeError(e) })
+      onMessage({ kind: 'error', text: fellBack ? t('ai.bothFailed') : t('ocr.failed'), detail: describeError(e) })
     } finally {
       setStage({ kind: 'idle' })
     }
@@ -115,7 +141,9 @@ export function useCardScan({ onPhoto, onOcr, onMessage, onRetake }: Options) {
       ? t('scan.loading')
       : stage.kind === 'processing'
         ? t('scan.processing')
-        : stage.kind === 'ocr'
+        : stage.kind === 'ai'
+          ? t('ai.reading')
+          : stage.kind === 'ocr'
           ? t(stage.progress.phase === 'loading' ? 'ocr.loading' : 'ocr.recognizing', {
               p: Math.round(stage.progress.progress * 100),
             })

@@ -69,10 +69,12 @@ const ICONS: Record<Tab | 'help', ReactNode> = {
 interface Props {
   tab: Tab
   onTab: (tab: Tab) => void
+  /** 広告を出さない（AI で読み取る設定がある時） */
+  noAds: boolean
 }
 
 /** 画面の下に固定するドック。上に広告（出る時だけ場所を取る）、その下にナビゲーションのボタン5つ */
-export function BottomDock({ tab, onTab }: Props) {
+export function BottomDock({ tab, onTab, noAds }: Props) {
   const { t, lang } = useI18n()
   const ref = useRef<HTMLDivElement>(null)
 
@@ -103,7 +105,7 @@ export function BottomDock({ tab, onTab }: Props) {
 
   return (
     <div className="bottom-dock" ref={ref}>
-      <AdBanner />
+      <AdBanner disabled={noAds} />
       <nav className="bottom-nav" aria-label={t('nav.menu')}>
         {item('capture', t('nav.capture'))}
         {item('list', t('nav.list'))}

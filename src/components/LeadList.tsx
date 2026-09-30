@@ -36,6 +36,8 @@ interface Props {
   onRestore: (list: Lead[]) => Promise<void>
   onPurge: (list: Lead[]) => Promise<void>
   onMove: (list: Lead[], target: ExhibitionRef) => Promise<void>
+  /** 写真を撮り直した時に AI で読み取るための API キー */
+  aiKey: string
 }
 
 type Scope = 'this' | 'unassigned' | 'all' | 'trash'
@@ -84,6 +86,7 @@ export function LeadList({
   onRestore,
   onPurge,
   onMove,
+  aiKey,
 }: Props) {
   const { t, lang } = useI18n()
   const [query, setQuery] = useState('')
@@ -268,6 +271,7 @@ export function LeadList({
                       <EditPhoto
                         photoId={l.photoId ?? undefined}
                         photo={editing.photo?.blob ?? null}
+                        aiKey={aiKey}
                         onPhoto={(blob) =>
                           setEditing((cur) => (cur && cur.id === l.id ? { ...cur, photo: { blob, ocrText: '' } } : cur))
                         }

@@ -842,6 +842,17 @@ textarea.sticky::placeholder {
 .lead-chart {
   margin: 4px -6px 0;
 }
+/* 設定の「AIで読み取る」 */
+.ai-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ai-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
 /* リードの詳細の下の「削除」「編集」 */
 .popup-actions {
   justify-content: flex-end;

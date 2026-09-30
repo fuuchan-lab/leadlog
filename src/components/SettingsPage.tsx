@@ -11,6 +11,7 @@ import { isOcrReady, prepareOcr } from '../scan/ocr.ts'
 import { belongsTo } from '../exhibitions.ts'
 import { applyTheme, loadTheme, saveTheme, type ThemePreference } from '../theme.ts'
 import type { Lead } from '../types.ts'
+import { AiCard } from './AiCard.tsx'
 import { CategoryEditor } from './CategoryEditor.tsx'
 import { DevicesCard } from './DevicesCard.tsx'
 import { ExhibitionCard } from './ExhibitionCard.tsx'
@@ -238,6 +239,8 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhi
           onMove={(id, dir) => shared.categories.move(kind, id, dir)}
         />
       ))}
+
+      <AiCard shared={shared} />
 
       <section className="card">
         <h2>{t('ocrPrep.title')}</h2>

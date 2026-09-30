@@ -16,13 +16,15 @@ interface Props {
   /** 登録者名が入っているか（入っていなければ登録させない） */
   memberReady: boolean
   onSave: (fields: LeadFields, extras: NewLeadExtras) => Promise<Lead>
+  /** AI で読み取るための API キー（空なら端末の中の OCR） */
+  aiKey: string
 }
 
 /**
  * 名刺・バッジの読み取りと、新しいリードの入力。
  * 撮影 → 四隅を合わせる → 書類のように補正 → 文字を読み取って入力欄を埋める → 確認して保存
  */
-export function CaptureCard({ lists, member, leads, exhibition, memberReady, onSave }: Props) {
+export function CaptureCard({ lists, member, leads, exhibition, memberReady, onSave, aiKey }: Props) {
   const { t } = useI18n()
   const [fields, setFields] = useState<LeadFields>(EMPTY_FIELDS)
   const [open, setOpen] = useState(false)
@@ -101,6 +103,7 @@ export function CaptureCard({ lists, member, leads, exhibition, memberReady, onS
     },
     onMessage: setMessage,
     onRetake: clearOcr,
+    aiKey,
   })
   const busy = scan.busy
 

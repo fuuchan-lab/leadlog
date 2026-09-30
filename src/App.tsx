@@ -107,6 +107,7 @@ export default function App() {
           exhibition={shared.current}
           memberReady={member !== ''}
           onSave={add}
+          aiKey={shared.settings.aiKey}
         />
       </div>
 
@@ -128,6 +129,7 @@ export default function App() {
           onRestore={restore}
           onPurge={purge}
           onMove={moveTo}
+          aiKey={shared.settings.aiKey}
         />
       </div>
 
@@ -167,7 +169,7 @@ export default function App() {
           onCancel={() => setPendingTab(null)}
         />
       )}
-      <BottomDock tab={tab} onTab={goTab} />
+      <BottomDock tab={tab} onTab={goTab} noAds={shared.settings.aiKey !== ''} />
     </main>
   )
 }
