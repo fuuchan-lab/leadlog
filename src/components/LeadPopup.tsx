@@ -15,10 +15,14 @@ interface Props {
   nextActions: Category[]
   duplicates: Lead[]
   onClose: () => void
+  /** 編集を始める（ごみ箱のリードでは無し） */
+  onEdit?: () => void
+  /** ごみ箱に入れる（ごみ箱のリードでは無し） */
+  onDelete?: () => void
 }
 
 /** リードの詳細（全項目・画像・登録者・読み取った文字） */
-export function LeadPopup({ lead, importance, customerTypes, interests, nextActions, duplicates, onClose }: Props) {
+export function LeadPopup({ lead, importance, customerTypes, interests, nextActions, duplicates, onClose, onEdit, onDelete }: Props) {
   const { t, lang } = useI18n()
 
   useEffect(() => {
@@ -91,6 +95,20 @@ export function LeadPopup({ lead, importance, customerTypes, interests, nextActi
             <summary>{t('ocr.showText')}</summary>
             <pre>{lead.ocrText}</pre>
           </details>
+        )}
+        {(onEdit || onDelete) && (
+          <div className="row popup-actions">
+            {onDelete && (
+              <button className="danger-btn" onClick={onDelete}>
+                {t('common.delete')}
+              </button>
+            )}
+            {onEdit && (
+              <button className="primary" onClick={onEdit}>
+                {t('common.edit')}
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>

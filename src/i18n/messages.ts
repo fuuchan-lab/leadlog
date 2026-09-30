@@ -76,6 +76,8 @@ export const ja = {
   'chart.hourSuffix': '時',
   'chart.aria': '会期の各日の、時間帯ごとのリード取得件数の棒グラフ',
   'chart.empty': '会期中のリードはまだありません。',
+  'chart.dayOrder': '各時間帯の棒は、左から1日目・2日目…の順です。色は重要度です。',
+  'chart.dayOrderToday': '各時間帯の棒は、左から1日目・2日目…の順です（今日の棒を濃く表示）。色は重要度です。',
 
   // 読み取り
   'capture.title': '名刺・バッジを読み取る',
@@ -389,6 +391,8 @@ export const en: Record<MessageKey, string> = {
   'chart.hourSuffix': '',
   'chart.aria': 'Bar chart of leads captured per hour on each day of the show',
   'chart.empty': 'No leads during the show yet.',
+  'chart.dayOrder': 'In each hour, bars run Day 1, Day 2, … from the left. Colors show importance.',
+  'chart.dayOrderToday': 'In each hour, bars run Day 1, Day 2, … from the left (today in solid color). Colors show importance.',
 
   'capture.title': 'Scan a business card or badge',
   'capture.help': 'Take a photo of a business card or show badge. It is squared up, the text is read, and the fields below are filled in.',

@@ -91,7 +91,7 @@ function Dashboard({ leads, ex, importance }: { leads: Lead[]; ex: Exhibition; i
         <p className="muted">{t('chart.empty')}</p>
       ) : (
         <Suspense fallback={<div className="chart-loading" aria-busy="true" />}>
-          <LeadChart dashboard={d} />
+          <LeadChart dashboard={d} importance={importance} />
         </Suspense>
       )}
       {d.outside > 0 && <p className="muted small">{t('dash.outside', { n: d.outside })}</p>}

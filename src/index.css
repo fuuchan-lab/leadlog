@@ -842,6 +842,53 @@ textarea.sticky::placeholder {
 .lead-chart {
   margin: 4px -6px 0;
 }
+/* リードの詳細の下の「削除」「編集」 */
+.popup-actions {
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+.popup-actions button {
+  min-width: 96px;
+}
+.chart-legend {
+  justify-content: center;
+  margin-top: 2px;
+  font-size: 0.8rem;
+}
+.chart-note {
+  margin: 4px 6px 0;
+  text-align: center;
+}
+/* グラフの棒に触れた時の、その時間帯の日ごと・重要度ごとの件数 */
+.chart-tooltip {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 12px;
+}
+.chart-tooltip p {
+  margin: 2px 0;
+}
+.chart-tooltip-title {
+  font-weight: 600;
+}
+.chart-tooltip-today {
+  font-weight: 600;
+}
+.chart-tooltip-part {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+  font-weight: 400;
+}
+.chart-tooltip .chip-dot {
+  width: 8px;
+  height: 8px;
+}
 .breakdown {
   display: grid;
   grid-template-columns: 1fr;

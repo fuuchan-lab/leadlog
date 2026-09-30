@@ -132,6 +132,8 @@ export function LeadList({
     }
   }
 
+  const startEdit = (l: Lead) => setEditing({ id: l.id, fields: pick(l), exhibitionId: currentExhibitionOf(l) })
+
   const duplicates = useMemo(() => findDuplicates(leads), [leads])
   const byId = (list: Category[], id: string) => list.find((c) => c.id === id)
 
@@ -213,7 +215,7 @@ export function LeadList({
           const dup = duplicates.get(l.id)
           const isEditing = editing?.id === l.id
           return (
-            <li key={l.id}>
+            <li key={l.id} id={`lead-${l.id}`}>
               <div className="row">
                 <span className="muted small">
                   {formatDateTime(l.metAt || l.createdAt, lang)} · {t('list.by', { who: l.staff || authorLabel(l.createdBy) })}
@@ -236,10 +238,7 @@ export function LeadList({
                 ) : (
                   <span>
                     {!isEditing && (
-                      <button
-                        className="link"
-                        onClick={() => setEditing({ id: l.id, fields: pick(l), exhibitionId: currentExhibitionOf(l) })}
-                      >
+                      <button className="link" onClick={() => startEdit(l)}>
                         {t('common.edit')}
                       </button>
                     )}
@@ -437,6 +436,27 @@ export function LeadList({
           nextActions={allNextActions}
           duplicates={duplicates.get(popup.id) ?? []}
           onClose={() => setPopup(null)}
+          onEdit={
+            scope === 'trash'
+              ? undefined
+              : () => {
+                  startEdit(popup)
+                  setPopup(null)
+                  // 一覧の中で開いた編集の欄を見せる
+                  requestAnimationFrame(() =>
+                    document.getElementById(`lead-${popup.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+                  )
+                }
+          }
+          onDelete={
+            scope === 'trash'
+              ? undefined
+              : () => {
+                  if (!confirm(t('list.confirmDelete'))) return
+                  setPopup(null)
+                  void run(() => onTrash([popup]))
+                }
+          }
         />
       )}
     </section>
