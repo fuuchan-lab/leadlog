@@ -1189,6 +1189,38 @@ input[type='datetime-local'] {
   text-overflow: ellipsis;
 }
 
+/* 読み取りの見出しの下の、登録先の展示会 */
+.capture-exhibition {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 4px 0 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+.capture-exhibition strong {
+  font-size: 1.1rem;
+  overflow-wrap: anywhere;
+}
+.capture-exhibition-label {
+  font-size: 0.85rem;
+}
+.capture-exhibition-none {
+  background: var(--caution-bg);
+  color: var(--caution-text);
+}
+.capture-exhibition-none strong {
+  font-size: 0.95rem;
+}
+
+/* 編集の「撮り直す」「画像を選ぶ」（写真のすぐ下） */
+.edit-photo-buttons {
+  margin-top: 8px;
+}
+
 /* 「再撮影」ボタン（写真のすぐ下） */
 .retake-button {
   width: 100%;

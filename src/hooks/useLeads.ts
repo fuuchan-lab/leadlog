@@ -21,6 +21,12 @@ export interface NewLeadExtras {
   exhibition: string
 }
 
+/** 編集で撮り直した名刺・バッジの画像 */
+export interface PhotoReplacement {
+  blob: Blob
+  ocrText: string
+}
+
 /** この端末に保存しているリード。追加・編集・削除すると、同期でドライブにも反映される */
 export function useLeads() {
   /** 削除済みを含む全部 */
@@ -76,13 +82,26 @@ export function useLeads() {
     [reload],
   )
 
-  /** 内容を直す。target を渡すと、そのリードを別の展示会（未分類なら id が ''）に移す */
+  /**
+   * 内容を直す。target を渡すと、そのリードを別の展示会（未分類なら id が ''）に移す。
+   * photo を渡すと、名刺・バッジの画像を撮り直したものに差し替える
+   */
   const update = useCallback(
-    async (lead: Lead, fields: LeadFields, target?: ExhibitionRef) => {
+    async (lead: Lead, fields: LeadFields, target?: ExhibitionRef, photo?: PhotoReplacement) => {
+      let photoPatch: Partial<Lead> = {}
+      if (photo) {
+        // 画像は新しい ID で保存する（同期で新しい画像として上がり、他の端末も新しい画像を取りにいく）
+        const photoId = crypto.randomUUID()
+        await putPhoto({ id: photoId, blob: photo.blob, synced: false })
+        // 前の画像は、この端末からは消す。ドライブの画像は、まだ同期していない端末が表示に使うので残す
+        if (lead.photoId) await deletePhoto(lead.photoId)
+        photoPatch = { photoId, ocrText: photo.ocrText }
+      }
       await putLead({
         ...lead,
         ...trimFields(fields),
         ...(target ? { exhibitionId: target.id, exhibition: target.name } : {}),
+        ...photoPatch,
         updatedAt: Date.now(),
         updatedBy: currentAuthor(),
         synced: false,
