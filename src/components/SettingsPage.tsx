@@ -240,7 +240,7 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhi
         />
       ))}
 
-      <AiCard shared={shared} />
+      <AiCard shared={shared} loggedIn={loggedIn} />
 
       <section className="card">
         <h2>{t('ocrPrep.title')}</h2>

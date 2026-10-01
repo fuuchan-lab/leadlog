@@ -881,6 +881,41 @@ textarea.sticky::placeholder {
 }
 
 /* 設定の「AIで読み取る」 */
+.ai-steps {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.ai-steps-title {
+  margin: 0;
+  font-weight: 700;
+}
+.ai-steps ol {
+  margin: 6px 0 0;
+  padding-left: 1.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+.ai-steps a {
+  white-space: nowrap;
+  font-weight: 600;
+}
+.ai-key-row {
+  display: flex;
+  gap: 6px;
+}
+.ai-key-row input {
+  flex: 1;
+  min-width: 0;
+}
+.ai-key-row button {
+  flex: none;
+  min-height: 0;
+  padding: 6px 12px;
+}
 .ai-form {
   display: flex;
   flex-direction: column;
