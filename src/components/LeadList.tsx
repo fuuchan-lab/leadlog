@@ -272,6 +272,10 @@ export function LeadList({
                         photoId={l.photoId ?? undefined}
                         photo={editing.photo?.blob ?? null}
                         aiKey={aiKey}
+                        current={editing.fields}
+                        onApplyAi={(patch) =>
+                          setEditing((cur) => (cur && cur.id === l.id ? { ...cur, fields: { ...cur.fields, ...patch } } : cur))
+                        }
                         onPhoto={(blob) =>
                           setEditing((cur) => (cur && cur.id === l.id ? { ...cur, photo: { blob, ocrText: '' } } : cur))
                         }

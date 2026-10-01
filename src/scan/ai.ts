@@ -121,3 +121,8 @@ export async function checkAiKey(apiKey: string): Promise<'ok' | 'auth' | 'faile
     return 'failed'
   }
 }
+
+/** AI の再解析で、今の入力と違う項目（AI が空の項目は除く）。画面で、どれを反映するか選んでもらう */
+export function aiChanges(current: Extracted, found: Extracted): (keyof Extracted)[] {
+  return FIELD_KEYS.filter((k) => found[k] !== '' && found[k] !== current[k].trim())
+}

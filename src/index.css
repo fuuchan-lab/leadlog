@@ -827,6 +827,59 @@ textarea.sticky::placeholder {
 .lead-chart {
   margin: 4px -6px 0;
 }
+/* 編集の「AIで再解析」と、その結果の確認 */
+.reai-button {
+  width: 100%;
+  margin-top: 8px;
+}
+.reai-review {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--info-bg);
+  color: var(--info-text);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reai-review .muted {
+  color: inherit;
+  opacity: 0.85;
+}
+.reai-title {
+  margin: 0;
+  font-weight: 700;
+}
+.reai-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reai-list label {
+  display: grid;
+  grid-template-columns: auto 5.5em minmax(0, 1fr);
+  align-items: baseline;
+  gap: 6px;
+  cursor: pointer;
+}
+.reai-field {
+  font-size: 0.85rem;
+}
+.reai-values {
+  overflow-wrap: anywhere;
+}
+.reai-old {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+.reai-actions {
+  justify-content: flex-end;
+}
+
 /* 設定の「AIで読み取る」 */
 .ai-form {
   display: flex;
