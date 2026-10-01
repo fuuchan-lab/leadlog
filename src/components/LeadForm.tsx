@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { authorLabel } from '../device.ts'
-import { matchingLeads } from '../duplicates.ts'
+import { buildKeyIndex, matchingLeads } from '../duplicates.ts'
 import { useI18n } from '../i18n/useI18n.ts'
 import type { MessageKey } from '../i18n/messages.ts'
 import { PREFECTURES } from '../scan/extract.ts'
@@ -56,7 +56,9 @@ function toLocalInput(ts: number): string {
 export function LeadForm({ value, onChange, lists, member, leads, editingId, photo }: Props) {
   const { t } = useI18n()
   const set = <K extends keyof LeadFields>(key: K, v: LeadFields[K]) => onChange({ ...value, [key]: v })
-  const duplicates = matchingLeads(value, leads, editingId)
+  // 全リードの目印は、リードが変わった時だけ作り直す（入力のたびに作ると、件数が多い時に重い）
+  const keyIndex = useMemo(() => buildKeyIndex(leads), [leads])
+  const duplicates = matchingLeads(value, leads, editingId, keyIndex)
   const editing = editingId !== undefined
 
   const stepFor = (action: string) => value.nextSteps.find((s) => s.action === action)

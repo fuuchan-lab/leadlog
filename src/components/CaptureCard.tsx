@@ -3,8 +3,9 @@ import type { Exhibition } from '../exhibitions.ts'
 import { useCardScan, type ScanMessage } from '../hooks/useCardScan.tsx'
 import type { NewLeadExtras } from '../hooks/useLeads.ts'
 import { useI18n } from '../i18n/useI18n.ts'
-import { EMPTY_FIELDS, hasContent, type Lead, type LeadFields } from '../types.ts'
+import { EMPTY_FIELDS, fillEmpty, hasContent, type Lead, type LeadFields } from '../types.ts'
 import { LeadForm, type FormLists } from './LeadForm.tsx'
+import { StatusMessage } from './StatusMessage.tsx'
 
 interface Props {
   lists: FormLists
@@ -91,13 +92,7 @@ export function CaptureCard({ lists, member, leads, exhibition, memberReady, onS
     onOcr: (text, found) => {
       setOcrText(text)
       // すでに入力されている欄（手で直した欄）は上書きしない
-      setFields((cur) => {
-        const next = { ...cur }
-        for (const [k, v] of Object.entries(found) as [keyof typeof found, string][]) {
-          if (!next[k].trim() && v) next[k] = v
-        }
-        return next
-      })
+      setFields((cur) => fillEmpty(cur, found))
       // 再撮影の時は、欄の値がこの読み取り結果のまま（手で直していない）なら消す
       setOcrFilled(Object.fromEntries(Object.entries(found).filter(([, v]) => v !== '')))
     },
@@ -149,19 +144,7 @@ export function CaptureCard({ lists, member, leads, exhibition, memberReady, onS
         </button>
       </div>
       {scan.progress}
-      {message && (
-        <p className={message.kind === 'ok' ? 'ok' : 'error'} role={message.kind === 'ok' ? 'status' : 'alert'}>
-          {message.text}
-          {message.detail && (
-            <>
-              <br />
-              <span className="small muted">
-                {t('err.detail')}: {message.detail}
-              </span>
-            </>
-          )}
-        </p>
-      )}
+      {message && <StatusMessage kind={message.kind} text={message.text} detail={message.detail} />}
 
       {open && (
         <div className="editor">

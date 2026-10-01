@@ -30,7 +30,7 @@ export function toGray({ data, width, height }: RGBAImage): Uint8Array {
 
 /** 大津の方法で、明るい部分と暗い部分を分けるしきい値を求める */
 export function otsuThreshold(gray: Uint8Array): number {
-  const hist = new Array<number>(256).fill(0)
+  const hist = new Uint32Array(256)
   for (const v of gray) hist[v]++
   const total = gray.length
   let sum = 0
@@ -778,18 +778,22 @@ export function enhanceDocument(img: RGBAImage): RGBAImage {
   for (const v of norm) hist[v]++
   const lo = percentile(hist, norm.length * 0.02)
   const hi = Math.max(lo + 1, percentile(hist, norm.length * 0.5) - 4)
+  // 明るさ（0〜255）ごとの出力を先に作っておく（画素ごとに累乗を計算すると重いため）
+  const lut = new Uint8Array(256)
+  for (let n = 0; n < 256; n++) {
+    const t = Math.min(1, Math.max(0, (n - lo) / (hi - lo)))
+    // 少しだけ濃くして、かすれた文字を読みやすくする
+    lut[n] = Math.round(255 * Math.pow(t, 1.4))
+  }
   const out = new Uint8ClampedArray(width * height * 4)
   for (let i = 0, p = 0; i < norm.length; i++, p += 4) {
-    const t = Math.min(1, Math.max(0, (norm[i] - lo) / (hi - lo)))
-    // 少しだけ濃くして、かすれた文字を読みやすくする
-    const v = Math.round(255 * Math.pow(t, 1.4))
-    out[p] = out[p + 1] = out[p + 2] = v
+    out[p] = out[p + 1] = out[p + 2] = lut[norm[i]]
     out[p + 3] = 255
   }
   return { data: out, width, height }
 }
 
-function percentile(hist: number[], target: number): number {
+function percentile(hist: ArrayLike<number>, target: number): number {
   let acc = 0
   for (let v = 0; v < 256; v++) {
     acc += hist[v]
@@ -798,27 +802,23 @@ function percentile(hist: number[], target: number): number {
   return 255
 }
 
-/** 90度単位で右に回す（縦書きの名刺や、横向きに撮った写真のため） */
+/** 90度単位で右に回す（縦書きの名刺や、横向きに撮った写真のため）。何度回しても1回の走査で済ませる */
 export function rotate90(img: RGBAImage, times: number): RGBAImage {
   const n = ((times % 4) + 4) % 4
   if (n === 0) return img
-  let cur = img
-  for (let k = 0; k < n; k++) {
-    const { data, width, height } = cur
-    const out = new Uint8ClampedArray(data.length)
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const s = (y * width + x) * 4
-        const nx = height - 1 - y
-        const ny = x
-        const d = (ny * height + nx) * 4
-        out[d] = data[s]
-        out[d + 1] = data[s + 1]
-        out[d + 2] = data[s + 2]
-        out[d + 3] = data[s + 3]
-      }
+  const { data, width: w, height: h } = img
+  // 1画素（RGBA の4バイト）を、32ビットの数1つとしてまとめて写す
+  const src = new Uint32Array(data.buffer, data.byteOffset, w * h)
+  const out = new Uint8ClampedArray(data.length)
+  const dst = new Uint32Array(out.buffer)
+  const ow = n === 2 ? w : h
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      // 右に 90°: (x, y) → (h-1-y, x)、180°: (w-1-x, h-1-y)、270°: (y, w-1-x)
+      const nx = n === 1 ? h - 1 - y : n === 2 ? w - 1 - x : y
+      const ny = n === 1 ? x : n === 2 ? h - 1 - y : w - 1 - x
+      dst[ny * ow + nx] = src[y * w + x]
     }
-    cur = { data: out, width: height, height: width }
   }
-  return cur
+  return { data: out, width: ow, height: n === 2 ? h : w }
 }

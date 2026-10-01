@@ -15,6 +15,7 @@ import { AiCard } from './AiCard.tsx'
 import { CategoryEditor } from './CategoryEditor.tsx'
 import { DevicesCard } from './DevicesCard.tsx'
 import { ExhibitionCard } from './ExhibitionCard.tsx'
+import { StatusMessage } from './StatusMessage.tsx'
 
 interface Props {
   shared: SharedSettingsState
@@ -320,19 +321,7 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhi
             )}
           </p>
         )}
-        {exp.status === 'error' && (
-          <p className="error" role="alert">
-            {t('export.failed')}
-            {exp.detail && (
-              <>
-                <br />
-                <span className="small muted">
-                  {t('err.detail')}: {exp.detail}
-                </span>
-              </>
-            )}
-          </p>
-        )}
+        {exp.status === 'error' && <StatusMessage kind="error" text={t('export.failed')} detail={exp.detail} />}
       </section>
 
       <section className="card">
@@ -389,17 +378,11 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhi
           </p>
         )}
         {imp.status === 'error' && (
-          <p className="error" role="alert">
-            {t(imp.missing ? 'import.noData' : 'import.failed')}
-            {!imp.missing && imp.detail && (
-              <>
-                <br />
-                <span className="small muted">
-                  {t('err.detail')}: {imp.detail}
-                </span>
-              </>
-            )}
-          </p>
+          <StatusMessage
+            kind="error"
+            text={t(imp.missing ? 'import.noData' : 'import.failed')}
+            detail={imp.missing ? undefined : imp.detail}
+          />
         )}
       </section>
 

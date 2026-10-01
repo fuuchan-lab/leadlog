@@ -4,6 +4,7 @@ import { useI18n } from '../i18n/useI18n.ts'
 import type { MessageKey } from '../i18n/messages.ts'
 import { loadLeadPhoto } from '../photos.ts'
 import type { Extracted } from '../scan/extract.ts'
+import { StatusMessage } from './StatusMessage.tsx'
 
 const LABELS: Record<keyof Extracted, MessageKey> = {
   name: 'field.name',
@@ -126,19 +127,7 @@ export function AiReanalyze({ photoId, photo, aiKey, current, onApply }: Props) 
       >
         {state.kind === 'busy' ? t('reai.busy') : t('reai.button')}
       </button>
-      {state.kind === 'error' && (
-        <p className="error" role="alert">
-          {state.text}
-          {state.detail && (
-            <>
-              <br />
-              <span className="small muted">
-                {t('err.detail')}: {state.detail}
-              </span>
-            </>
-          )}
-        </p>
-      )}
+      {state.kind === 'error' && <StatusMessage kind="error" text={state.text} detail={state.detail} />}
     </>
   )
 }

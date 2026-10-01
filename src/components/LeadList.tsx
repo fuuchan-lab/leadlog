@@ -6,7 +6,7 @@ import { TRASH_DAYS, type ExhibitionRef, type PhotoReplacement } from '../hooks/
 import { formatDateTime } from '../format.ts'
 import { useI18n } from '../i18n/useI18n.ts'
 import type { Category } from '../settings.ts'
-import { hasContent, type Lead, type LeadFields } from '../types.ts'
+import { fillEmpty, hasContent, type Lead, type LeadFields } from '../types.ts'
 import { CategoryTag } from './CategoryPicker.tsx'
 import { EditPhoto } from './EditPhoto.tsx'
 import { LeadForm, type FormLists } from './LeadForm.tsx'
@@ -140,18 +140,28 @@ export function LeadList({
   const duplicates = useMemo(() => findDuplicates(leads), [leads])
   const byId = (list: Category[], id: string) => list.find((c) => c.id === id)
 
+  /** 検索の対象の文字（リードごと）。入力のたびに全リードを整え直さないよう、リードが変わった時だけ作る */
+  const searchText = useMemo(
+    () =>
+      new Map(
+        leads.map((l) => [
+          l.id,
+          [l.name, l.company, l.department, l.title, l.email, l.phone, l.city, l.prefecture, l.note, l.createdBy.member]
+            .join(' ')
+            .normalize('NFKC')
+            .toLowerCase(),
+        ]),
+      ),
+    [leads],
+  )
+
   const filtered = useMemo(() => {
     const q = query.normalize('NFKC').trim().toLowerCase()
     return leads.filter((l) => {
       if (filter !== null && l.importance !== filter) return false
-      if (!q) return true
-      return [l.name, l.company, l.department, l.title, l.email, l.phone, l.city, l.prefecture, l.note, l.createdBy.member]
-        .join(' ')
-        .normalize('NFKC')
-        .toLowerCase()
-        .includes(q)
+      return !q || (searchText.get(l.id) ?? '').includes(q)
     })
-  }, [leads, query, filter])
+  }, [leads, query, filter, searchText])
 
   return (
     <section className="card">
@@ -283,11 +293,7 @@ export function LeadList({
                           setEditing((cur) => {
                             if (!cur || cur.id !== l.id || !cur.photo) return cur
                             // 入力済みの欄は変えず、空欄だけ読み取った内容で埋める
-                            const fields = { ...cur.fields }
-                            for (const [k, v] of Object.entries(found) as [keyof typeof found, string][]) {
-                              if (!fields[k].trim() && v) fields[k] = v
-                            }
-                            return { ...cur, fields, photo: { ...cur.photo, ocrText: text } }
+                            return { ...cur, fields: fillEmpty(cur.fields, found), photo: { ...cur.photo, ocrText: text } }
                           })
                         }
                       />

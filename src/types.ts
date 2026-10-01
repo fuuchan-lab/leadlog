@@ -117,3 +117,15 @@ export interface PhotoRecord {
 export function hasContent(f: LeadFields): boolean {
   return [f.name, f.company, f.email, f.phone].some((v) => v.trim() !== '')
 }
+
+/** 読み取りで入れる欄（氏名・会社名・部署名・役職・都道府県・市区町村・電話・メール） */
+type ReadKey = 'name' | 'company' | 'department' | 'title' | 'prefecture' | 'city' | 'phone' | 'email'
+
+/** 読み取った内容を、空欄にだけ入れる（入力済み・手で直した欄は上書きしない） */
+export function fillEmpty(fields: LeadFields, found: Partial<Record<ReadKey, string>>): LeadFields {
+  const next = { ...fields }
+  for (const [k, v] of Object.entries(found) as [ReadKey, string][]) {
+    if (v && !next[k].trim()) next[k] = v
+  }
+  return next
+}

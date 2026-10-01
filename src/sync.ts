@@ -10,7 +10,7 @@
  *
  * 他の端末の画像は、一覧で表示する時に必要な分だけ取りに行く（展示会場の回線に負担をかけないため）。
  */
-import { deletePhoto, getAllLeads, getUnsyncedPhotos, markLeadsSynced, markPhotoSynced, putLead } from './db.ts'
+import { deletePhotos, getAllLeads, getUnsyncedPhotos, markLeadsSynced, markPhotoSynced, putLeads } from './db.ts'
 import { currentAuthor, getDeviceId } from './device.ts'
 import { ensureRegistered } from './devices.ts'
 import { deleteFile, downloadText, ensureFolder, listFolderFiles, uploadFile, type DriveFile } from './drive.ts'
@@ -25,6 +25,7 @@ import {
   setSettingsDirty,
 } from './settings.ts'
 import { LEAD_FILE_RE, leadFileName, mergeLead, ownLeads, parseLeadFile, photoFileName, serializeLeads } from './syncMerge.ts'
+import type { Lead } from './types.ts'
 
 export interface SyncResult {
   /** ドライブの内容を端末に取り込んだ（画面の更新が必要） */
@@ -122,14 +123,18 @@ async function doSync(lang: 'ja' | 'en'): Promise<SyncResult> {
   const local = new Map((await getAllLeads()).map((l) => [l.id, l]))
   for (const f of leadFiles) {
     if (index[f.id] === f.modifiedTime) continue
+    // ファイルごとに、変わったリードをまとめて1回で保存する（初めての端末では全員分になるため）
+    const changed: Lead[] = []
     for (const remote of parseLeadFile(await downloadText(f.id))) {
       const merged = mergeLead(local.get(remote.id), remote)
       if (!merged) continue
-      await putLead(merged)
+      changed.push(merged)
       local.set(merged.id, merged)
-      changedLocal = true
-      if (merged.deleted && merged.photoId) await deletePhoto(merged.photoId)
     }
+    await putLeads(changed)
+    await deletePhotos(changed.flatMap((l) => (l.deleted && l.photoId ? [l.photoId] : [])))
+    if (changed.length > 0) changedLocal = true
+    // 保存し終えてから「取り込み済み」にする（途中で失敗したら、次の同期でやり直す）
     index[f.id] = f.modifiedTime
   }
   saveIndex(index)
