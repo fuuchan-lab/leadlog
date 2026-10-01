@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useCardScan, type ScanMessage } from '../hooks/useCardScan.tsx'
 import { useI18n } from '../i18n/useI18n.ts'
 import type { Extracted } from '../scan/extract.ts'
+import { AiReanalyze } from './AiReanalyze.tsx'
 import { LeadPhoto } from './LeadPhoto.tsx'
 
 interface Props {
@@ -13,13 +14,17 @@ interface Props {
   onOcr: (text: string, found: Extracted) => void
   /** AI で読み取るための API キー */
   aiKey: string
+  /** 今の入力欄の内容（AI の再解析の結果と比べる） */
+  current: Extracted
+  /** AI の再解析で選んだ項目を、入力欄に入れる */
+  onApplyAi: (patch: Partial<Extracted>) => void
 }
 
 /**
  * 編集中のリードの、名刺・バッジの画像。「撮り直し」「画像を選ぶ」で差し替えられる
  * （手入力で登録したリードには、あとから画像を付けられる）。差し替えは編集を保存した時に反映する
  */
-export function EditPhoto({ photoId, photo, onPhoto, onOcr, aiKey }: Props) {
+export function EditPhoto({ photoId, photo, onPhoto, onOcr, aiKey, current, onApplyAi }: Props) {
   const { t } = useI18n()
   const [message, setMessage] = useState<ScanMessage>(null)
   const scan = useCardScan({ onPhoto, onOcr, onMessage: setMessage, aiKey, doneText: t('edit.ocrDone') })
@@ -52,6 +57,10 @@ export function EditPhoto({ photoId, photo, onPhoto, onOcr, aiKey }: Props) {
           {t('capture.pick')}
         </button>
       </div>
+      {/* 保存済み（または撮り直した）画像を、AI でもう一度読み取る。結果は選んでから反映する */}
+      {aiKey && hasPhoto && !scan.busy && (
+        <AiReanalyze photoId={photoId} photo={photo} aiKey={aiKey} current={current} onApply={onApplyAi} />
+      )}
       {scan.progress}
       {message && (
         <p className={message.kind === 'ok' ? 'ok' : 'error'} role={message.kind === 'ok' ? 'status' : 'alert'}>
