@@ -45,8 +45,19 @@ export async function loadPhoto(file: Blob): Promise<RGBAImage> {
 
 export function toCanvas(img: RGBAImage): HTMLCanvasElement {
   const c = newCanvas(img.width, img.height)
-  c.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(img.data), img.width, img.height), 0, 0)
+  // 画素のバイト列は写さずに、そのまま渡す（大きい写真で数十MB の写しを作らないため）
+  c.getContext('2d')!.putImageData(new ImageData(img.data as Uint8ClampedArray<ArrayBuffer>, img.width, img.height), 0, 0)
   return c
+}
+
+/** 範囲を合わせる画面の下絵。画面に出すだけなので、長辺を小さくしてから JPEG にする（軽く、速く） */
+export function previewUrl(img: RGBAImage, maxSide = 1200): string {
+  const s = Math.min(1, maxSide / Math.max(img.width, img.height))
+  const full = toCanvas(img)
+  if (s === 1) return full.toDataURL('image/jpeg', 0.8)
+  const c = newCanvas(Math.round(img.width * s), Math.round(img.height * s))
+  c.getContext('2d')!.drawImage(full, 0, 0, c.width, c.height)
+  return c.toDataURL('image/jpeg', 0.8)
 }
 
 /** 名刺・バッジの四隅を探す（写真の座標）。見つからなければ、写真の端から少し内側の四角 */
@@ -54,12 +65,15 @@ export function findDocument(img: RGBAImage): { quad: Quad; found: boolean } {
   const s = Math.min(1, DETECT_MAX_SIDE / Math.max(img.width, img.height))
   const w = Math.max(1, Math.round(img.width * s))
   const h = Math.max(1, Math.round(img.height * s))
-  const small = s < 1 ? readPixels(toCanvas(img), w, h) : img
+  // 縮める元のキャンバスは1回だけ作って使い回す
+  let full: HTMLCanvasElement | null = null
+  const source = () => (full ??= toCanvas(img))
+  const small = s < 1 ? readPixels(source(), w, h) : img
   const quad = detectDocument(small)
   if (!quad) return { quad: defaultQuad(img.width, img.height), found: false }
   // 小さい画像で見つけた四隅を、大きめの画像で名刺の縁にぴったり合わせ直す
   const sm = Math.min(1, REFINE_MAX_SIDE / Math.max(img.width, img.height))
-  const mid = sm < 1 ? readPixels(toCanvas(img), Math.round(img.width * sm), Math.round(img.height * sm)) : img
+  const mid = sm < 1 ? readPixels(source(), Math.round(img.width * sm), Math.round(img.height * sm)) : img
   const refined = refineQuad(mid, scaleQuad(quad, sm / s))
   return { quad: scaleQuad(refined, 1 / sm), found: true }
 }

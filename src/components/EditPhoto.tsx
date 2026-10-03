@@ -4,6 +4,7 @@ import { useI18n } from '../i18n/useI18n.ts'
 import type { Extracted } from '../scan/extract.ts'
 import { AiReanalyze } from './AiReanalyze.tsx'
 import { LeadPhoto } from './LeadPhoto.tsx'
+import { StatusMessage } from './StatusMessage.tsx'
 
 interface Props {
   /** 保存済みの画像（無ければ手入力で登録したリード） */
@@ -62,19 +63,7 @@ export function EditPhoto({ photoId, photo, onPhoto, onOcr, aiKey, current, onAp
         <AiReanalyze photoId={photoId} photo={photo} aiKey={aiKey} current={current} onApply={onApplyAi} />
       )}
       {scan.progress}
-      {message && (
-        <p className={message.kind === 'ok' ? 'ok' : 'error'} role={message.kind === 'ok' ? 'status' : 'alert'}>
-          {message.text}
-          {message.detail && (
-            <>
-              <br />
-              <span className="small muted">
-                {t('err.detail')}: {message.detail}
-              </span>
-            </>
-          )}
-        </p>
-      )}
+      {message && <StatusMessage kind={message.kind} text={message.text} detail={message.detail} />}
       {scan.elements}
     </div>
   )

@@ -1,11 +1,10 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { BottomDock, type Tab } from './components/BottomDock.tsx'
 import { CaptureCard } from './components/CaptureCard.tsx'
 import { Header } from './components/Header.tsx'
 import { LeadList } from './components/LeadList.tsx'
 import { MemberPrompt } from './components/MemberPrompt.tsx'
 import { SaveChangesModal } from './components/SaveChangesModal.tsx'
-import { SettingsPage } from './components/SettingsPage.tsx'
 import { StatusCard } from './components/StatusCard.tsx'
 import { loadMember, saveMember } from './device.ts'
 import { MAX_DEVICES } from './devices.ts'
@@ -16,6 +15,9 @@ import { useSharedSettings } from './hooks/useSharedSettings.ts'
 import { useSync } from './hooks/useSync.ts'
 import { useI18n } from './i18n/useI18n.ts'
 import { hasUnsavedChanges, saveAllChanges } from './leaveGuard.ts'
+
+// 設定の画面（展示会・分類の編集、Excel の読み込みなど）は開いた時に読み込み、最初の表示を軽くする
+const SettingsPage = lazy(() => import('./components/SettingsPage.tsx').then((m) => ({ default: m.SettingsPage })))
 
 export default function App() {
   const { t, lang } = useI18n()
@@ -146,16 +148,18 @@ export default function App() {
 
       {tab === 'settings' && (
         <div className="settings-grid">
-          <SettingsPage
-            shared={shared}
-            member={member}
-            onMember={changeMember}
-            leads={leads}
-            loggedIn={auth.account !== null}
-            onExhibitionOpened={() => setTab('dashboard')}
-            onImported={reload}
-            onRenameMember={renameMember}
-          />
+          <Suspense fallback={<div className="chart-loading" aria-busy="true" />}>
+            <SettingsPage
+              shared={shared}
+              member={member}
+              onMember={changeMember}
+              leads={leads}
+              loggedIn={auth.account !== null}
+              onExhibitionOpened={() => setTab('dashboard')}
+              onImported={reload}
+              onRenameMember={renameMember}
+            />
+          </Suspense>
         </div>
       )}
 

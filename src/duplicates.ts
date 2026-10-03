@@ -21,27 +21,41 @@ function keysOf(f: Pick<LeadFields, 'email' | 'name' | 'company' | 'phone'>): st
   return keys
 }
 
-/** 重複している可能性のあるリードの ID → 相手のリード */
-export function findDuplicates(leads: Lead[]): Map<string, Lead[]> {
-  const byKey = new Map<string, Lead[]>()
+/** 目印 → その目印を持つリード（leads と同じ順）。入力のたびに全リードの目印を作り直さないよう、まとめて作っておく */
+export type KeyIndex = Map<string, Lead[]>
+
+export function buildKeyIndex(leads: Lead[]): KeyIndex {
+  const index: KeyIndex = new Map()
   for (const l of leads) {
-    for (const k of keysOf(l)) byKey.set(k, [...(byKey.get(k) ?? []), l])
-  }
-  const result = new Map<string, Lead[]>()
-  for (const group of byKey.values()) {
-    if (group.length < 2) continue
-    for (const l of group) {
-      const others = group.filter((o) => o.id !== l.id)
-      const cur = result.get(l.id) ?? []
-      result.set(l.id, [...cur, ...others.filter((o) => !cur.includes(o))])
+    for (const k of keysOf(l)) {
+      const group = index.get(k)
+      if (group) group.push(l)
+      else index.set(k, [l])
     }
   }
-  return result
+  return index
 }
 
-/** 入力中の内容と同じ方の、登録済みのリード */
-export function matchingLeads(fields: LeadFields, leads: Lead[], exceptId?: string): Lead[] {
-  const keys = new Set(keysOf(fields))
-  if (keys.size === 0) return []
-  return leads.filter((l) => l.id !== exceptId && keysOf(l).some((k) => keys.has(k)))
+/** 重複している可能性のあるリードの ID → 相手のリード */
+export function findDuplicates(leads: Lead[]): Map<string, Lead[]> {
+  const others = new Map<string, Set<Lead>>()
+  for (const group of buildKeyIndex(leads).values()) {
+    if (group.length < 2) continue
+    for (const l of group) {
+      const set = others.get(l.id) ?? new Set<Lead>()
+      for (const o of group) if (o.id !== l.id) set.add(o)
+      others.set(l.id, set)
+    }
+  }
+  return new Map([...others].map(([id, set]) => [id, [...set]]))
+}
+
+/**
+ * 入力中の内容と同じ方の、登録済みのリード（leads と同じ順）。
+ * index（buildKeyIndex(leads)）を渡すと、全リードの目印を作り直さずに探す
+ */
+export function matchingLeads(fields: LeadFields, leads: Lead[], exceptId?: string, index = buildKeyIndex(leads)): Lead[] {
+  const found = new Set<Lead>()
+  for (const k of keysOf(fields)) for (const l of index.get(k) ?? []) if (l.id !== exceptId) found.add(l)
+  return found.size === 0 ? [] : leads.filter((l) => found.has(l))
 }

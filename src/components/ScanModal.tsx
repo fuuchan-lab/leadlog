@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../i18n/useI18n.ts'
 import { defaultQuad, type Quad, type RGBAImage } from '../scan/document.ts'
-import { toCanvas } from '../scan/scanImage.ts'
+import { previewUrl } from '../scan/scanImage.ts'
 
 interface Props {
   image: RGBAImage
@@ -21,7 +21,7 @@ export function ScanModal({ image, initialQuad, found, onApply, onClose, onRetak
   const [rotation, setRotation] = useState(0)
   const svgRef = useRef<SVGSVGElement>(null)
   const dragging = useRef<number | null>(null)
-  const src = useMemo(() => toCanvas(image).toDataURL('image/jpeg', 0.8), [image])
+  const src = useMemo(() => previewUrl(image), [image])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { deletePhoto, getAllLeads, putLead, putPhoto } from '../db.ts'
+import { deletePhoto, deletePhotos, getAllLeads, putLead, putLeads, putPhoto } from '../db.ts'
 import { currentAuthor } from '../device.ts'
 import { renameMemberInLead } from '../leadRename.ts'
 import type { Lead, LeadFields } from '../types.ts'
@@ -41,6 +41,23 @@ export function useLeads() {
     void reload()
   }, [reload])
 
+  /**
+   * 保存したリードを、画面の一覧にも反映する。保存のたびに全部を読み直すと、件数が多い時に重く、
+   * 変わっていないリードまで作り直されて集計などが全部やり直しになるため、変わったものだけ差し替える。
+   * 新しいリード（一覧に無いもの）は先頭に入れる（一覧は登録の新しい順）
+   */
+  const applyLocal = useCallback((changed: Lead[]) => {
+    const byId = new Map(changed.map((l) => [l.id, l]))
+    setAll((prev) => {
+      const next = prev.map((l) => {
+        const c = byId.get(l.id)
+        if (c) byId.delete(l.id)
+        return c ?? l
+      })
+      return byId.size > 0 ? [...byId.values(), ...next] : next
+    })
+  }, [])
+
   /** 表示するリード（削除済み・ごみ箱を除く、登録の新しい順） */
   const leads = useMemo(() => all.filter((l) => !l.deleted && !l.trashedAt), [all])
   /** ごみ箱のリード（ごみ箱に入れた新しい順） */
@@ -76,10 +93,10 @@ export function useLeads() {
         synced: false,
       }
       await putLead(lead)
-      await reload()
+      applyLocal([lead])
       return lead
     },
-    [reload],
+    [applyLocal],
   )
 
   /**
@@ -97,7 +114,7 @@ export function useLeads() {
         if (lead.photoId) await deletePhoto(lead.photoId)
         photoPatch = { photoId, ocrText: photo.ocrText }
       }
-      await putLead({
+      const next: Lead = {
         ...lead,
         ...trimFields(fields),
         ...(target ? { exhibitionId: target.id, exhibition: target.name } : {}),
@@ -105,10 +122,11 @@ export function useLeads() {
         updatedAt: Date.now(),
         updatedBy: currentAuthor(),
         synced: false,
-      })
-      await reload()
+      }
+      await putLead(next)
+      applyLocal([next])
     },
-    [reload],
+    [applyLocal],
   )
 
   /** 複数のリードの項目をまとめて変える（同期で他の端末にも伝わる） */
@@ -116,10 +134,11 @@ export function useLeads() {
     async (list: Lead[], patch: (l: Lead) => Lead) => {
       const now = Date.now()
       const author = currentAuthor()
-      for (const l of list) await putLead({ ...patch(l), updatedAt: now, updatedBy: author, synced: false })
-      await reload()
+      const changed = list.map((l) => ({ ...patch(l), updatedAt: now, updatedBy: author, synced: false }))
+      await putLeads(changed)
+      applyLocal(changed)
     },
-    [reload],
+    [applyLocal],
   )
 
   /** ごみ箱に入れる（一覧・集計・Excel から外れる。ごみ箱から元に戻せる） */
@@ -141,7 +160,7 @@ export function useLeads() {
   /** 完全に削除する。記録は削除の印を付けて残し（同期で他の端末に伝えるため）、画像は消す */
   const purge = useCallback(
     async (list: Lead[]) => {
-      for (const l of list) if (l.photoId) await deletePhoto(l.photoId)
+      await deletePhotos(list.flatMap((l) => (l.photoId ? [l.photoId] : [])))
       await patchMany(list, (l) => ({ ...l, deleted: true }))
     },
     [patchMany],
@@ -161,18 +180,15 @@ export function useLeads() {
   const renameMember = useCallback(
     async (from: string, to: string): Promise<number> => {
       const now = Date.now()
-      let count = 0
-      for (const lead of await getAllLeads()) {
-        if (lead.deleted) continue
-        const next = renameMemberInLead(lead, from, to, now)
-        if (!next) continue
-        await putLead(next)
-        count++
-      }
-      if (count > 0) await reload()
-      return count
+      const changed = (await getAllLeads()).flatMap((lead) => {
+        const next = lead.deleted ? null : renameMemberInLead(lead, from, to, now)
+        return next ? [next] : []
+      })
+      await putLeads(changed)
+      applyLocal(changed)
+      return changed.length
     },
-    [reload],
+    [applyLocal],
   )
 
   // ごみ箱に入れてから一定の日数がたったリードは、完全に削除する

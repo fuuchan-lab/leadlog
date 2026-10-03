@@ -10,6 +10,7 @@ interface LeadDB extends DBSchema {
   photos: {
     key: string
     value: StoredPhoto
+    indexes: { 'by-pending': number }
   }
 }
 
@@ -24,10 +25,21 @@ interface StoredPhoto {
   type?: string
   blob?: Blob
   synced: boolean
+  /**
+   * まだドライブに上げていない画像だけに付ける印（1）。同期のたびに全部の画像を読まずに、
+   * 上げていない画像だけを索引（by-pending）で探すため。上げたら消す（印の無い画像は索引に入らない）
+   */
+  pending?: 1
+}
+
+/** 同期済みかどうかに合わせて、未同期の印を付ける・外す */
+function withPending(p: StoredPhoto): StoredPhoto {
+  const { pending: _pending, ...rest } = p
+  return p.synced ? rest : { ...rest, pending: 1 }
 }
 
 async function toStored(photo: PhotoRecord): Promise<StoredPhoto> {
-  return { id: photo.id, data: await photo.blob.arrayBuffer(), type: photo.blob.type || 'image/jpeg', synced: photo.synced }
+  return withPending({ id: photo.id, data: await photo.blob.arrayBuffer(), type: photo.blob.type || 'image/jpeg', synced: photo.synced })
 }
 
 /**
@@ -42,7 +54,7 @@ async function fromStored(stored: StoredPhoto | undefined): Promise<PhotoRecord 
     if (data.byteLength === 0) throw new Error('empty-photo')
     const type = stored.blob.type || 'image/jpeg'
     const db = await getDB()
-    await db.put('photos', { id: stored.id, data, type, synced: stored.synced })
+    await db.put('photos', withPending({ id: stored.id, data, type, synced: stored.synced }))
     return { id: stored.id, blob: new Blob([data], { type }), synced: stored.synced }
   } catch (e) {
     console.error('[photo-unreadable]', stored.id, e)
@@ -53,11 +65,21 @@ async function fromStored(stored: StoredPhoto | undefined): Promise<PhotoRecord 
 let dbPromise: Promise<IDBPDatabase<LeadDB>> | null = null
 
 function getDB() {
-  dbPromise ??= openDB<LeadDB>('leadlog', 1, {
-    upgrade(db) {
-      const leads = db.createObjectStore('leads', { keyPath: 'id' })
-      leads.createIndex('by-created', 'createdAt')
-      db.createObjectStore('photos', { keyPath: 'id' })
+  dbPromise ??= openDB<LeadDB>('leadlog', 2, {
+    async upgrade(db, oldVersion, _newVersion, tx) {
+      if (oldVersion < 1) {
+        const leads = db.createObjectStore('leads', { keyPath: 'id' })
+        leads.createIndex('by-created', 'createdAt')
+        db.createObjectStore('photos', { keyPath: 'id' })
+      }
+      // 版 2: 未同期の画像の索引。すでにある画像のうち、まだ上げていないものに印を付ける
+      if (oldVersion < 2) {
+        const photos = tx.objectStore('photos')
+        photos.createIndex('by-pending', 'pending')
+        for (let cursor = await photos.openCursor(); cursor; cursor = await cursor.continue()) {
+          if (!cursor.value.synced) await cursor.update(withPending(cursor.value))
+        }
+      }
     },
   })
   return dbPromise
@@ -73,6 +95,14 @@ export async function getAllLeads(): Promise<Lead[]> {
 export async function putLead(lead: Lead) {
   const db = await getDB()
   await db.put('leads', lead)
+}
+
+/** 複数のリードを1回のトランザクションで保存する（1件ずつ保存するより、まとめて操作する時にずっと速い） */
+export async function putLeads(leads: Lead[]) {
+  if (leads.length === 0) return
+  const db = await getDB()
+  const tx = db.transaction('leads', 'readwrite')
+  await Promise.all([...leads.map((l) => tx.store.put(l)), tx.done])
 }
 
 /** 同期の間に編集されていなければ、同期済みにする */
@@ -107,7 +137,8 @@ export async function getPhotoInfo(id: string): Promise<{ synced: boolean } | un
 
 export async function getUnsyncedPhotos(): Promise<PhotoRecord[]> {
   const db = await getDB()
-  const unsynced = (await db.getAll('photos')).filter((p) => !p.synced)
+  // 未同期の印が付いた画像だけを読む（同期済みの画像のバイト列は読まない）
+  const unsynced = await db.getAllFromIndex('photos', 'by-pending')
   const result: PhotoRecord[] = []
   for (const p of unsynced) {
     const photo = await fromStored(p)
@@ -119,10 +150,18 @@ export async function getUnsyncedPhotos(): Promise<PhotoRecord[]> {
 export async function markPhotoSynced(id: string) {
   const db = await getDB()
   const cur = await db.get('photos', id)
-  if (cur) await db.put('photos', { ...cur, synced: true })
+  if (cur) await db.put('photos', withPending({ ...cur, synced: true }))
 }
 
 export async function deletePhoto(id: string) {
   const db = await getDB()
   await db.delete('photos', id)
+}
+
+/** 複数の画像を1回のトランザクションで消す */
+export async function deletePhotos(ids: string[]) {
+  if (ids.length === 0) return
+  const db = await getDB()
+  const tx = db.transaction('photos', 'readwrite')
+  await Promise.all([...ids.map((id) => tx.store.delete(id)), tx.done])
 }
