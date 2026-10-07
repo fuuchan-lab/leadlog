@@ -25,6 +25,8 @@ const TOKEN_KEY = 'leadlog-drive-token'
 const SESSION_KEY = 'leadlog-drive-session'
 
 let accessToken: string | null = null
+/** メモリ上のアクセストークンの期限 (ms)。切れていたら、ユーザーの操作の直後に取り直すために使う */
+let tokenExpiresAt = 0
 let folderIdCache: string | null = null
 
 export function isDriveConfigured(): boolean {
@@ -50,8 +52,9 @@ export function setSession(active: boolean) {
 
 function storeToken(token: string, expiresInSeconds: string | number) {
   const ms = Number(expiresInSeconds) > 0 ? Number(expiresInSeconds) * 1000 : 55 * 60_000
+  tokenExpiresAt = Date.now() + ms
   try {
-    localStorage.setItem(TOKEN_KEY, JSON.stringify({ accessToken: token, expiresAt: Date.now() + ms }))
+    localStorage.setItem(TOKEN_KEY, JSON.stringify({ accessToken: token, expiresAt: tokenExpiresAt }))
   } catch {
     // トークンはメモリ上でも使える
   }
@@ -66,6 +69,7 @@ export function restoreStoredToken(): boolean {
     if (!parsed.accessToken || !Number.isFinite(parsed.expiresAt)) return false
     if ((parsed.expiresAt as number) <= Date.now() + 30_000) return false
     accessToken = parsed.accessToken
+    tokenExpiresAt = parsed.expiresAt as number
     return true
   } catch {
     return false
@@ -74,6 +78,7 @@ export function restoreStoredToken(): boolean {
 
 export function clearToken() {
   accessToken = null
+  tokenExpiresAt = 0
   try {
     localStorage.removeItem(TOKEN_KEY)
   } catch {
@@ -81,11 +86,15 @@ export function clearToken() {
   }
 }
 
+function isGisLoaded(): boolean {
+  return typeof google !== 'undefined' && !!google.accounts?.oauth2
+}
+
 function waitForGis(timeoutMs = 5000): Promise<void> {
   return new Promise((resolve, reject) => {
     const start = Date.now()
     const tick = () => {
-      if (typeof google !== 'undefined' && google.accounts?.oauth2) resolve()
+      if (isGisLoaded()) resolve()
       else if (Date.now() - start > timeoutMs) reject(new Error('google-identity-not-loaded'))
       else setTimeout(tick, 100)
     }
@@ -101,9 +110,15 @@ const LOGIN_TIMEOUT_MS = 3 * 60_000
 /**
  * アクセストークンを取得する。
  * 初回（トークンなし）は consent、以降は無言の再取得 ('')。アカウント切替は select_account。
+ * ブラウザは、ユーザーの操作から離れたポップアップを止める (popup_failed_to_open)。そのため Google のスクリプトが
+ * 読み込み済みなら、await を挟まずにその場で requestAccessToken を呼ぶ（呼び出し元も、操作の直後に呼ぶこと）。
  */
-export async function getAccessToken(interactive = true, promptOverride: string | null = null): Promise<string> {
-  await waitForGis()
+export function getAccessToken(interactive = true, promptOverride: string | null = null): Promise<string> {
+  if (isGisLoaded()) return requestToken(interactive, promptOverride)
+  return waitForGis().then(() => requestToken(interactive, promptOverride))
+}
+
+function requestToken(interactive: boolean, promptOverride: string | null): Promise<string> {
   // ポップアップが閉じた通知は、ログインが成功していても、スマホなどでトークンより先に届くことがある。
   // すぐ失敗にせず、猶予の間にトークンが届けば成功にする（詳しくは tokenWaiter.ts）
   const waiter = createTokenWaiter<string>({ graceMs: LOGIN_GRACE_MS, timeoutMs: LOGIN_TIMEOUT_MS })
@@ -129,6 +144,15 @@ export async function getAccessToken(interactive = true, promptOverride: string 
   })
   client.requestAccessToken({ prompt: promptOverride ?? (interactive && !accessToken ? 'consent' : '') })
   return waiter.promise
+}
+
+/**
+ * ボタンを押した直後に呼ぶ。トークンがまだ使えるならすぐ解決し、期限が近い・無いなら、その場で取り直す。
+ * 時間のかかる処理（Excel の生成・フォルダー検索）の途中で期限切れに気づくと、そこからではポップアップを開けないため。
+ */
+export function ensureFreshToken(marginMs = 120_000): Promise<void> {
+  if (accessToken && tokenExpiresAt > Date.now() + marginMs) return Promise.resolve()
+  return getAccessToken(false).then(() => undefined)
 }
 
 async function driveFetch(url: string, init: RequestInit = {}, allowRetry = true): Promise<Response> {

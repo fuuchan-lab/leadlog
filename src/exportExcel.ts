@@ -1,7 +1,9 @@
 import writeExcelFile from 'write-excel-file/universal'
+import { patchWorkbook } from './xlsxPatch.ts'
+import { chunkText, DATA_SHEET_NAME } from './excelPackage.ts'
 import { findDuplicates } from './duplicates.ts'
 import { ensureFolder, ensureSubfolder, uploadFile } from './drive.ts'
-import { exportFileName, exportPackageName, hourlySheet, leadsSheet } from './excelData.ts'
+import { CARD_MAX_HEIGHT, CARD_MAX_WIDTH, cardsSheet, exportFileName, exportPackageName, hourlySheet, leadsSheet } from './excelData.ts'
 import { loadLeadPhoto } from './photos.ts'
 import { fitSize, imageSize } from './scan/logo.ts'
 import { PACKAGE_DATA_FILE, photoFileName, serializeLeads } from './syncMerge.ts'
@@ -47,7 +49,44 @@ export async function buildWorkbook(
   } catch (e) {
     console.error('[export-logo]', e)
   }
-  return writeExcelFile([
+  // 「名刺画像」シート。画像を取り出せたリードだけ、来場日ごとに並べる。失敗しても、書き出し自体は続ける
+  let cards: ReturnType<typeof cardsSheet> | null = null
+  const cardImages = []
+  try {
+    const photos = new Map<string, { blob: Blob; width: number; height: number }>()
+    for (const l of leads) {
+      if (!l.photoId || l.deleted) continue
+      try {
+        const blob = await loadLeadPhoto(l.photoId)
+        if (blob) photos.set(l.id, { blob, ...(await imageSize(blob)) })
+      } catch (e) {
+        console.error('[export-card]', e)
+      }
+    }
+    if (photos.size > 0) {
+      cards = cardsSheet(leads, new Set(photos.keys()), ex, t)
+      for (const tile of cards.tiles) {
+        const p = photos.get(tile.leadId)!
+        const { width, height } = fitSize(p.width, p.height, CARD_MAX_WIDTH, CARD_MAX_HEIGHT)
+        cardImages.push({
+          content: p.blob,
+          contentType: p.blob.type || 'image/jpeg',
+          width,
+          height,
+          dpi: 96,
+          anchor: { row: tile.row, column: tile.column },
+          offsetX: 4,
+          offsetY: 4,
+          // 画像の「名前」にリード ID を持たせる。あとで Excel から読み込む時に、画像とリードを結びつける目印（図の位置が動いても変わらない）
+          title: tile.leadId,
+          description: tile.caption,
+        })
+      }
+    }
+  } catch (e) {
+    console.error('[export-cards]', e)
+  }
+  const book = await writeExcelFile([
     // 見出しと、No.・会社名・氏名の列を固定する
     {
       data: list.data,
@@ -58,7 +97,15 @@ export async function buildWorkbook(
       ...(images.length > 0 ? { images } : {}),
     },
     ...(hourly ? [{ data: hourly.data, sheet: t('xlsx.sheetHourly'), columns: hourly.columns, stickyRowsCount: hourly.headerRows }] : []),
+    ...(cards ? [{ data: cards.data, sheet: t('xlsx.sheetCards'), columns: cards.columns, images: cardImages }] : []),
+    // あとで Excel から読み込むためのデータ（非表示シート。leadlog-data.json と同じ内容）
+    { data: chunkText(serializeLeads(leads)).map((value) => [{ value }]), sheet: DATA_SHEET_NAME },
   ]).toBlob()
+  // 「リード」シートの見出しにフィルターを付ける（見出しの最後の行から、最後のリードまで）
+  return patchWorkbook(book, {
+    filter: { sheetName: t('xlsx.sheetLeads'), headerRow: list.headerRows, lastRow: list.data.length, columnCount: list.columns.length },
+    hiddenSheets: [DATA_SHEET_NAME],
+  })
 }
 
 export interface ExportResult {

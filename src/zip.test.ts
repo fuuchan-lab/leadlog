@@ -25,3 +25,15 @@ test('空のファイルや、圧縮してもあまり縮まらないデータ�
   assert.equal(entries.find((e) => e.name === 'empty.json')?.data.length, 0)
   assert.equal(entries.find((e) => e.name === 'random.bin')?.data.length, 2000)
 })
+
+test('日本語のファイル名に UTF-8 フラグ (bit 11) と Unicode Path 拡張が付き、名前がそのまま戻る', async () => {
+  const name = 'LeadLog_九州半導体産業展_20261007-1238.xlsx'
+  const zip = await createZip([{ name, data: new Uint8Array([1, 2, 3]) }])
+  const buf = new Uint8Array(await zip.arrayBuffer())
+  const view = new DataView(buf.buffer)
+  assert.equal(view.getUint16(6, true) & 0x0800, 0x0800, 'ローカルヘッダ')
+  const central = view.getUint32(buf.length - 6, true)
+  assert.equal(view.getUint16(central + 8, true) & 0x0800, 0x0800, '中央ディレクトリ')
+  assert.equal(view.getUint16(central + 30, true) > 0, true, '拡張フィールドあり')
+  assert.deepEqual((await readZip(zip)).map((e) => e.name), [name])
+})

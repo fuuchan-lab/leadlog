@@ -37,6 +37,21 @@ async function inflate(data: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(await new Response(stream).arrayBuffer())
 }
 
+/** 汎用ビットフラグの bit 11: ファイル名が UTF-8（これがないと日本語版 Windows の展開ソフトが Shift_JIS と見なして文字化けする） */
+const FLAG_UTF8 = 0x0800
+
+/** Info-ZIP Unicode Path 拡張フィールド(0x7075)。bit 11 を見ない古い展開ソフト向けの保険 */
+function unicodePathField(nameBytes: Uint8Array): Uint8Array<ArrayBuffer> {
+  const field = new Uint8Array(new ArrayBuffer(4 + 5 + nameBytes.length))
+  const view = new DataView(field.buffer)
+  view.setUint16(0, 0x7075, true)
+  view.setUint16(2, 5 + nameBytes.length, true)
+  field[4] = 1 // バージョン
+  view.setUint32(5, crc32(nameBytes), true)
+  field.set(nameBytes, 9)
+  return field
+}
+
 function dosDateTime(d = new Date()) {
   const time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)
   const date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()
@@ -54,6 +69,7 @@ export async function createZip(entries: ZipEntry[]): Promise<Blob> {
 
   for (const entry of entries) {
     const nameBytes = encoder.encode(entry.name)
+    const extra = unicodePathField(nameBytes)
     const crc = crc32(entry.data)
     const compressed = await deflate(entry.data)
     const method = compressed ? 8 : 0
@@ -62,7 +78,7 @@ export async function createZip(entries: ZipEntry[]): Promise<Blob> {
     const local = new DataView(new ArrayBuffer(30))
     local.setUint32(0, 0x04034b50, true)
     local.setUint16(4, 20, true)
-    local.setUint16(6, 0, true)
+    local.setUint16(6, FLAG_UTF8, true)
     local.setUint16(8, method, true)
     local.setUint16(10, time, true)
     local.setUint16(12, date, true)
@@ -70,14 +86,14 @@ export async function createZip(entries: ZipEntry[]): Promise<Blob> {
     local.setUint32(18, body.length, true)
     local.setUint32(22, entry.data.length, true)
     local.setUint16(26, nameBytes.length, true)
-    local.setUint16(28, 0, true)
-    parts.push(local.buffer, nameBytes.slice(), body.slice())
+    local.setUint16(28, extra.length, true)
+    parts.push(local.buffer, nameBytes.slice(), extra, body.slice())
 
     const centralHeader = new DataView(new ArrayBuffer(46))
     centralHeader.setUint32(0, 0x02014b50, true)
     centralHeader.setUint16(4, 20, true)
     centralHeader.setUint16(6, 20, true)
-    centralHeader.setUint16(8, 0, true)
+    centralHeader.setUint16(8, FLAG_UTF8, true)
     centralHeader.setUint16(10, method, true)
     centralHeader.setUint16(12, time, true)
     centralHeader.setUint16(14, date, true)
@@ -85,11 +101,12 @@ export async function createZip(entries: ZipEntry[]): Promise<Blob> {
     centralHeader.setUint32(20, body.length, true)
     centralHeader.setUint32(24, entry.data.length, true)
     centralHeader.setUint16(28, nameBytes.length, true)
+    centralHeader.setUint16(30, extra.length, true)
     centralHeader.setUint32(42, offset, true)
-    central.push(centralHeader.buffer, nameBytes)
+    central.push(centralHeader.buffer, nameBytes, extra)
 
-    offset += 30 + nameBytes.length + body.length
-    centralSize += 46 + nameBytes.length
+    offset += 30 + nameBytes.length + extra.length + body.length
+    centralSize += 46 + nameBytes.length + extra.length
   }
 
   const end = new DataView(new ArrayBuffer(22))

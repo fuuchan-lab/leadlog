@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react'
 import { describeDevice, getDeviceId } from '../device.ts'
 import { sameName } from '../leadRename.ts'
-import { describeError } from '../errors.ts'
-import { driveConfig, ensureFolder, listSubfolders, type DriveFolder } from '../drive.ts'
+import { describeError, isPopupBlocked } from '../errors.ts'
+import { driveConfig, ensureFolder, ensureFreshToken, listSubfolders, type DriveFolder } from '../drive.ts'
 import type { SharedSettingsState } from '../hooks/useSharedSettings.ts'
 import type { Lang } from '../i18n/context.ts'
 import { useI18n } from '../i18n/useI18n.ts'
@@ -37,7 +37,7 @@ type ExportState =
   | { status: 'idle' }
   | { status: 'busy' }
   | { status: 'done'; name: string; id?: string; isFolder?: boolean }
-  | { status: 'error'; detail?: string }
+  | { status: 'error'; detail?: string; popupBlocked?: boolean }
 
 type ImportState =
   | { status: 'idle' }
@@ -74,15 +74,19 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhi
   const targets = onlyCurrent ? exLeads : leads
 
   const runExport = async (to: 'drive' | 'device') => {
+    // ブラウザは、ボタンを押した操作から離れたポップアップを止める。ドライブに保存する時は、ログインが必要なら
+    // 最初の await より前（この押下の直後）にその場で開き、Excel の生成などはトークンが届いてから行う
+    const tokenReady = to === 'drive' ? ensureFreshToken() : Promise.resolve()
     setExp({ status: 'busy' })
     try {
+      await tokenReady
       // Excel 出力のライブラリは、使う時だけ読み込む
       const { exportToDrive, exportToDevice } = await import('../exportExcel.ts')
       const run = to === 'drive' ? exportToDrive : exportToDevice
       setExp({ status: 'done', ...(await run(targets, shared.settings, onlyCurrent ? current : null, t, lang)) })
     } catch (e) {
       console.error('[export]', e)
-      setExp({ status: 'error', detail: describeError(e) })
+      setExp({ status: 'error', detail: describeError(e), popupBlocked: isPopupBlocked(e) })
     }
   }
 
@@ -321,7 +325,9 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhi
             )}
           </p>
         )}
-        {exp.status === 'error' && <StatusMessage kind="error" text={t('export.failed')} detail={exp.detail} />}
+        {exp.status === 'error' && (
+          <StatusMessage kind="error" text={t(exp.popupBlocked ? 'export.popupBlocked' : 'export.failed')} detail={exp.detail} />
+        )}
       </section>
 
       <section className="card">
@@ -342,7 +348,7 @@ export function SettingsPage({ shared, member, onMember, leads, loggedIn, onExhi
         <input
           ref={zipInputRef}
           type="file"
-          accept=".zip,application/zip"
+          accept=".zip,.xlsx,application/zip,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           hidden
           onChange={(e) => {
             onPickZip(e.target.files?.[0])

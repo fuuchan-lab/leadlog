@@ -7,6 +7,11 @@ export function describeError(e: unknown): string {
   return e instanceof Error ? `${e.name}: ${e.message}` : String(e)
 }
 
+/** Google ログインのポップアップを、ブラウザやアプリに開けなかったか（ブロックされた・アプリ内ブラウザなど） */
+export function isPopupBlocked(e: unknown): boolean {
+  return e instanceof Error && e.message === 'popup_failed_to_open'
+}
+
 /**
  * 電波がない・通信できないことによる失敗か。
  * fetch は通信できないと TypeError になる。Google のログイン用スクリプトを読み込めない場合も同じ扱いにする。

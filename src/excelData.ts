@@ -10,7 +10,7 @@ import { authorLabel } from './device.ts'
 import type { Lang, TFn } from './i18n/context.ts'
 import { prefectureInEnglish } from './scan/extract.ts'
 import { categoryColor, categoryLabel, visibleCategories, type SharedSettings } from './settings.ts'
-import type { Exhibition } from './exhibitions.ts'
+import { parseDate, type Exhibition } from './exhibitions.ts'
 import { buildDashboard } from './stats.ts'
 import type { Lead } from './types.ts'
 
@@ -97,6 +97,9 @@ const cell = (value: string | number | Date | null | undefined, style: Omit<Cell
 
 /** 見出し（日本語と英語の2段） */
 const H = (ja: string, en: string) => `${ja}\n${en}`
+
+/** 「リード」シートのデータ行の高さ。36px 相当（Excel の行の高さは pt なので 36 × 0.75） */
+const LEAD_ROW_HEIGHT = 27
 
 export function leadsSheet(
   leads: Lead[],
@@ -214,7 +217,7 @@ export function leadsSheet(
       const place = { backgroundColor: COLOR.place, textColor: COLOR.placeText }
       const action = { backgroundColor: COLOR.action, textColor: COLOR.actionText }
       return [
-        cell(i + 1, { backgroundColor: COLOR.no, align: 'center' }),
+        cell(i + 1, { backgroundColor: COLOR.no, align: 'center', height: LEAD_ROW_HEIGHT }),
         cell(l.company, { ...person, fontWeight: 'bold' }),
         cell(l.name, person),
         cell(l.department, person),
@@ -293,9 +296,93 @@ export function hourlySheet(leads: Lead[], ex: Exhibition, t: TFn): SheetContent
   return { data, columns: [{ width: 14 }, ...d.perDay.map(() => ({ width: 10 })), { width: 10 }], headerRows: 1 }
 }
 
-/** ファイル名・フォルダー名に使えない文字を _ にする */
+/** 「名刺画像」シートの、1行に並べる枚数・1枚の列幅（文字数）・画像の最大の大きさ (px)・各行の高さ (pt) */
+export const CARD_COLUMNS = 4
+const CARD_COL_WIDTH = 36
+export const CARD_MAX_WIDTH = 250
+export const CARD_MAX_HEIGHT = 165
+const CARD_IMAGE_ROW_HEIGHT = 130
+
+export interface CardTile {
+  leadId: string
+  /** 画像の説明（No. と会社名・氏名。代替テキスト） */
+  caption: string
+  /** 画像を置く位置（1始まり） */
+  row: number
+  column: number
+}
+
+export interface CardsSheet extends SheetContent {
+  tiles: CardTile[]
+}
+
+const localDayKey = (ts: number) => {
+  const d = new Date(ts)
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+}
+
+/**
+ * 名刺画像を並べるシートの枠。「リード」シートと同じ並び（来場日時の順）・同じ No. で、来場日ごとに
+ * 「1日目」「2日目」の見出しを付け、1行に CARD_COLUMNS 枚ずつ、画像の上に No.・会社名・氏名を書く。
+ * withPhoto: 画像を取り出せたリードの ID（画像が無いリードは並べない）。画像そのものは呼び出し側が anchor に置く。
+ * 1日目は、1つの展示会なら初日、そうでなければ最初に来場日がある日
+ */
+export function cardsSheet(leads: Lead[], withPhoto: Set<string>, ex: Exhibition | null, t: TFn): CardsSheet {
+  const sorted = [...leads].filter((l) => !l.deleted).sort((a, b) => (a.metAt || a.createdAt) - (b.metAt || b.createdAt))
+  const dayOf = (l: Lead) => localDayKey(l.metAt || l.createdAt)
+  const firstDay = ex
+    ? Math.min(localDayKey(parseDate(ex.startDate).getTime()), sorted[0] ? dayOf(sorted[0]) : Infinity)
+    : sorted[0]
+      ? dayOf(sorted[0])
+      : 0
+  const data: Row[] = []
+  const tiles: CardTile[] = []
+  const blankRow = (): Row => Array<null>(CARD_COLUMNS).fill(null)
+  let currentDay: number | null = null
+  let inRow = CARD_COLUMNS
+  sorted.forEach((l, i) => {
+    if (!withPhoto.has(l.id)) return
+    const day = dayOf(l)
+    if (day !== currentDay) {
+      currentDay = day
+      inRow = CARD_COLUMNS
+      const n = Math.round((day - firstDay) / 86_400_000) + 1
+      const date = new Date(day)
+      const head: Cell = {
+        value: `${t('chart.day', { n })}  (${date.getMonth() + 1}/${date.getDate()})`,
+        columnSpan: CARD_COLUMNS,
+        fontWeight: 'bold',
+        fontSize: 13,
+        backgroundColor: COLOR.header,
+        alignVertical: 'center',
+        height: 24,
+        ...border,
+      }
+      data.push([head, ...Array<null>(CARD_COLUMNS - 1).fill(null)])
+    }
+    if (inRow >= CARD_COLUMNS) {
+      inRow = 0
+      data.push(blankRow().map(() => null)) // 見出し行（下で埋める）
+      data.push(blankRow().map(() => null)) // 画像の行
+    }
+    const captionRow = data[data.length - 2]
+    const title = [l.company, l.name].filter(Boolean).join(' ')
+    const caption = `No.${i + 1}  ${title}`
+    captionRow[inRow] = { value: caption, fontWeight: 'bold', backgroundColor: COLOR.person, wrap: true, alignVertical: 'center', height: 32, ...border }
+    data[data.length - 1][inRow] = { value: '', height: CARD_IMAGE_ROW_HEIGHT, ...border }
+    tiles.push({ leadId: l.id, caption, row: data.length, column: inRow + 1 })
+    inRow++
+  })
+  return { data, columns: Array.from({ length: CARD_COLUMNS }, () => ({ width: CARD_COL_WIDTH })), headerRows: 0, tiles }
+}
+
+/** ファイル名・フォルダー名に使えない文字（制御文字を含む）を _ にし、40文字までにする。末尾のドットは Windows で消えるので除く */
 export function sanitizeName(name: string): string {
-  return name.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 40)
+  // eslint-disable-next-line no-control-regex -- 制御文字を除くのが目的
+  return Array.from(name.replace(/[\\/:*?"<>|\s\u0000-\u001f\u007f]+/g, '_'))
+    .slice(0, 40)
+    .join('')
+    .replace(/\.+$/, '')
 }
 
 function timestamp(now: Date): string {

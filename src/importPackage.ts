@@ -9,7 +9,8 @@
 import { getAllLeads, getPhoto, putLead, putPhoto } from './db.ts'
 import { downloadBlob, downloadText, listFolderFiles } from './drive.ts'
 import { mergeLead, PACKAGE_DATA_FILE, parseLeadFile, photoFileName, type RemoteLead } from './syncMerge.ts'
-import { readZip } from './zip.ts'
+import { readExcelPackage } from './excelPackage.ts'
+import { readZip, type ZipEntry } from './zip.ts'
 
 export interface ImportResult {
   /** 新しく取り込んだ・更新したリードの件数 */
@@ -70,15 +71,35 @@ export async function importFromDriveFolder(folderId: string): Promise<ImportRes
   })
 }
 
-/** この端末に保存した ZIP ファイルから読み込む */
+/**
+ * この端末に保存した ZIP ファイル、または LeadLog が書き出した Excel (.xlsx) から読み込む。
+ * Excel は、非表示シートのデータと「名刺画像」シートの画像を使う（excelPackage.ts）
+ */
 export async function importFromZip(file: Blob): Promise<ImportResult> {
   const entries = await readZip(file)
+  if (entries.some((e) => e.name === 'xl/workbook.xml')) return importFromExcelEntries(entries)
   const dataEntry = entries.find((e) => e.name === PACKAGE_DATA_FILE)
   if (!dataEntry) throw new ImportDataMissingError()
   const remoteLeads = parseLeadFile(new TextDecoder().decode(dataEntry.data))
   const photos = new Map(entries.filter((e) => e.name.startsWith('card-')).map((e) => [e.name, e.data]))
   return applyImport(remoteLeads, async (photoId) => {
     const data = photos.get(photoFileName(photoId))
+    return data ? new Blob([data.slice()], { type: 'image/jpeg' }) : null
+  })
+}
+
+export async function importFromExcelEntries(entries: ZipEntry[]): Promise<ImportResult> {
+  const { dataText, photos } = readExcelPackage(entries)
+  if (!dataText) throw new ImportDataMissingError()
+  const remoteLeads = parseLeadFile(dataText)
+  // 画像はリード ID で結びついている。取り込みの処理は画像 ID で探すので、対応表を作る
+  const byPhotoId = new Map<string, Uint8Array>()
+  for (const l of remoteLeads) {
+    const data = photos.get(l.id)
+    if (data && l.photoId) byPhotoId.set(l.photoId, data)
+  }
+  return applyImport(remoteLeads, async (photoId) => {
+    const data = byPhotoId.get(photoId)
     return data ? new Blob([data.slice()], { type: 'image/jpeg' }) : null
   })
 }
