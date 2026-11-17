@@ -5,9 +5,10 @@ import { dayCount, exhibitionDays, type Exhibition } from '../exhibitions.ts'
 import type { Category } from '../settings.ts'
 import { buildDashboard } from '../stats.ts'
 import type { Lead } from '../types.ts'
+import { ImportancePie } from './ImportancePie.tsx'
 import { LeadPhoto } from './LeadPhoto.tsx'
 
-// グラフの部品（recharts）は大きいので別ファイルに分け、画面の他の部分を先に表示する
+// 時間帯別のグラフは別ファイルに分け、画面の他の部分を先に表示する
 const LeadChart = lazy(() => import('./LeadChart.tsx'))
 
 interface Props {
@@ -100,20 +101,13 @@ function Dashboard({ leads, ex, importance }: { leads: Lead[]; ex: Exhibition; i
         <div className="breakdown">
           <div>
             <p className="breakdown-title">{t('dash.byImportance')}</p>
-            <ul className="stat-chips">
-              {importance.map((c) => (
-                <li key={c.id}>
-                  <span className="chip-dot" style={{ background: c.color }} />
-                  {c.label} <strong>{d.byImportance.get(c.id) ?? 0}</strong>
-                </li>
-              ))}
-              {unrated > 0 && (
-                <li>
-                  <span className="chip-dot" style={{ background: '#cbd5e1' }} />
-                  {t('dash.unrated')} <strong>{unrated}</strong>
-                </li>
-              )}
-            </ul>
+            <ImportancePie
+              slices={[
+                ...importance.map((c) => ({ id: c.id, label: c.label, color: c.color, count: d.byImportance.get(c.id) ?? 0 })),
+                // 未評価（重要度を選んでいない・削除した重要度）は、ある時だけ最後に出す
+                ...(unrated > 0 ? [{ id: '', label: t('dash.unrated'), color: '#cbd5e1', count: unrated }] : []),
+              ]}
+            />
           </div>
           <div>
             <p className="breakdown-title">{t('dash.byMember')}</p>

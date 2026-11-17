@@ -996,6 +996,55 @@ textarea.sticky::placeholder {
   gap: 6px;
   margin-top: 8px;
 }
+/* 重要度別のドーナツと、その横の件数・割合 */
+.pie {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 6px;
+}
+.pie-chart {
+  flex: 0 0 auto;
+  width: 120px;
+  height: 120px;
+}
+.pie-total {
+  font-size: 22px;
+  font-weight: 700;
+  fill: var(--text);
+}
+.pie-unit {
+  font-size: 11px;
+  fill: var(--muted);
+}
+.pie-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 0.9rem;
+  min-width: 0;
+}
+.pie-legend li {
+  display: contents;
+}
+.pie-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pie-legend strong {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.pie-pct {
+  text-align: right;
+  min-width: 3em;
+  font-variant-numeric: tabular-nums;
+}
 .breakdown-title {
   margin: 0;
   font-size: 0.8rem;
