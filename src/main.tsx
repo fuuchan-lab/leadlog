@@ -4,6 +4,7 @@ import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './App.tsx'
 import { I18nProvider } from './i18n/I18nProvider.tsx'
+import { detectLang, loadEn } from './i18n/context.ts'
 import { applyTheme, loadTheme } from './theme.ts'
 
 applyTheme(loadTheme())
@@ -24,10 +25,16 @@ registerSW({
   },
 })
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <I18nProvider>
-      <App />
-    </I18nProvider>
-  </StrictMode>,
-)
+const render = () =>
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <I18nProvider>
+        <App />
+      </I18nProvider>
+    </StrictMode>,
+  )
+
+// 英語で使う端末は、英語の文言を読み込んでから画面を出す（日本語が一瞬出ないように）。
+// 読み込めない時は、日本語で出す
+if (detectLang() === 'en') loadEn().then(render, render)
+else render()

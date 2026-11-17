@@ -15,7 +15,6 @@
     "idb": "^8.0.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "recharts": "^3.10.1",
     "tesseract.js": "^7.0.0",
     "write-excel-file": "^4.1.1"
   },

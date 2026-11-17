@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import { en, ja, type MessageKey } from './messages.ts'
+import { ja, type MessageKey } from './messages.ts'
 
 export type Lang = 'ja' | 'en'
 
@@ -17,8 +17,28 @@ const STORAGE_KEY = 'leadlog-language'
 
 export const LOCALES: Record<Lang, string> = { ja: 'ja-JP', en: 'en-US' }
 
+/** 英語の文言。英語で使う時だけ読み込む（日本語だけで使う端末で、読み込む量を減らすため） */
+let en: Record<MessageKey, string> | null = null
+let enLoading: Promise<void> | null = null
+
+export function loadEn(): Promise<void> {
+  enLoading ??= import('./messages.en.ts').then(
+    (m) => {
+      en = m.en
+    },
+    (e: unknown) => {
+      enLoading = null // 読み込めなかった時は、次にもう一度試す
+      throw e
+    },
+  )
+  return enLoading
+}
+
+export const isEnLoaded = () => en !== null
+
 export function translate(lang: Lang, key: MessageKey, vars?: Vars): string {
-  const template: string = (lang === 'en' ? en : ja)[key]
+  // 英語をまだ読み込んでいない間は、日本語で出す
+  const template: string = (lang === 'en' && en ? en : ja)[key]
   return vars ? template.replace(/\{(\w+)\}/g, (_, name: string) => String(vars[name] ?? `{${name}}`)) : template
 }
 

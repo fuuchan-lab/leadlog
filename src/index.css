@@ -827,6 +827,23 @@ textarea.sticky::placeholder {
 .lead-chart {
   margin: 4px -6px 0;
 }
+/* 棒のグラフ（SVG）と、触れた時間帯の吹き出し */
+.lead-chart-stage {
+  position: relative;
+  /* 縦のスクロールはそのまま、横に指を動かすと時間帯を選べる */
+  touch-action: pan-y;
+}
+.lead-chart-stage svg {
+  display: block;
+}
+.chart-tooltip-float {
+  position: absolute;
+  top: 4px;
+  z-index: 2;
+  max-width: 70%;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
 /* 編集の「AIで再解析」と、その結果の確認 */
 .reai-button {
   width: 100%;
@@ -1231,9 +1248,6 @@ input[type='time'] {
 
 /* スマホの横向き（高さが低い）: グラフを低くして、入力欄が隠れないようにする */
 @media (max-height: 500px) and (orientation: landscape) {
-  .lead-chart .recharts-responsive-container {
-    height: 160px !important;
-  }
   .scan-image {
     max-height: 55vh;
   }

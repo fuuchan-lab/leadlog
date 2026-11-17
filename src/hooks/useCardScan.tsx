@@ -1,13 +1,16 @@
-import { useRef, useState, type ReactNode } from 'react'
+import { Suspense, useRef, useState, type ReactNode } from 'react'
 import { describeError } from '../errors.ts'
 import { isDesktop } from '../device.ts'
 import { useI18n } from '../i18n/useI18n.ts'
 import type { Quad, RGBAImage } from '../scan/document.ts'
 import type { Extracted } from '../scan/extract.ts'
-import { recognizeCard, type OcrProgress } from '../scan/ocr.ts'
-import { canvasToJpeg, findDocument, loadPhoto, makeDocument, toCanvas } from '../scan/scanImage.ts'
-import { CameraModal } from '../components/CameraModal.tsx'
-import { ScanModal } from '../components/ScanModal.tsx'
+import type { OcrProgress } from '../scan/ocr.ts'
+import { CameraModal, ScanModal } from '../components/lazyScan.ts'
+
+// 読み取りの部品（画像の補正・OCR・カメラや範囲を合わせる画面）は、名刺を読み取る時だけ読み込む。
+// アプリを開いた時に読み込む量を減らすため（一覧やダッシュボードだけ見る時には使わない）
+const scanImage = () => import('../scan/scanImage.ts')
+const ocr = () => import('../scan/ocr.ts')
 
 type Stage =
   | { kind: 'idle' }
@@ -76,6 +79,7 @@ export function useCardScan({ onPhoto, onOcr, onMessage, onRetake, aiKey, doneTe
     onMessage(null)
     setStage({ kind: 'loading' })
     try {
+      const { findDocument, loadPhoto } = await scanImage()
       const image = await loadPhoto(file)
       const detected = findDocument(image)
       const { quad, found } = !detected.found && guide ? { quad: guide, found: false } : detected
@@ -95,6 +99,7 @@ export function useCardScan({ onPhoto, onOcr, onMessage, onRetake, aiKey, doneTe
     let ocrCanvas: HTMLCanvasElement
     let photo: Blob
     try {
+      const { canvasToJpeg, makeDocument, toCanvas } = await scanImage()
       const doc = makeDocument(image, quad, rotation)
       ocrCanvas = toCanvas(doc.gray)
       photo = await canvasToJpeg(toCanvas(doc.color))
@@ -126,6 +131,7 @@ export function useCardScan({ onPhoto, onOcr, onMessage, onRetake, aiKey, doneTe
     }
     setStage({ kind: 'ocr', progress: { phase: 'loading', progress: 0 } })
     try {
+      const { recognizeCard } = await ocr()
       const result = await recognizeCard(ocrCanvas, (progress) => setStage({ kind: 'ocr', progress }))
       onOcr(result.text, result.fields)
       onMessage({ kind: 'ok', text: fellBack ? `${fellBack} ${done}` : done })
@@ -183,6 +189,7 @@ export function useCardScan({ onPhoto, onOcr, onMessage, onRetake, aiKey, doneTe
         }}
       />
 
+      <Suspense fallback={null}>
       {cameraOpen && (
         <CameraModal
           onClose={() => setCameraOpen(false)}
@@ -208,6 +215,7 @@ export function useCardScan({ onPhoto, onOcr, onMessage, onRetake, aiKey, doneTe
           onApply={(quad, rotation) => void apply(stage.image, quad, rotation)}
         />
       )}
+      </Suspense>
     </>
   )
 
