@@ -1,6 +1,15 @@
 import { useRef, useState } from 'react'
 import { adScriptLoaded } from '../adsense.ts'
-import { CONSOLE_LINKS, looksLikeAiKey, normalizeAiKey } from '../aiKey.ts'
+import {
+  AI_PROVIDERS,
+  aiProviderOf,
+  CONSOLE_LINKS,
+  KEY_PLACEHOLDERS,
+  looksLikeAiKey,
+  normalizeAiKey,
+  PROVIDER_NAMES,
+  type AiProvider,
+} from '../aiKey.ts'
 import type { SharedSettingsState } from '../hooks/useSharedSettings.ts'
 import { useI18n } from '../i18n/useI18n.ts'
 
@@ -19,12 +28,13 @@ const checkKey = async (k: string) => {
 }
 
 /**
- * 設定の「AI で読み取る」。Anthropic の API キーを入れると、名刺・バッジを AI（Claude）で読み取る。
+ * 設定の「AI で読み取る」。Gemini・OpenAI・Claude のどれかの API キーを入れると、名刺・バッジを AI で読み取る。
+ * どの AI かはキーの形で見分ける（別の会社のキーを貼り付けたら、その会社のタブに切り替える）。
  * キーは全員共通の設定として、同期で全端末に配る。
  * キーの取り方を手順で案内し、貼り付け・余分な空白の除去・保存前の確認で、入れ間違いを防ぐ
  */
 export function AiCard({ shared, loggedIn }: Props) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const key = shared.settings.aiKey
   const inputRef = useRef<HTMLInputElement>(null)
   const [draft, setDraft] = useState('')
@@ -32,8 +42,20 @@ export function AiCard({ shared, loggedIn }: Props) {
   const [check, setCheck] = useState<Check>('idle')
   const [pasteHint, setPasteHint] = useState(false)
 
+  const [provider, setProvider] = useState<AiProvider>('gemini')
   const cleaned = normalizeAiKey(draft)
   const valid = looksLikeAiKey(cleaned)
+  const savedProvider = aiProviderOf(key)
+  const name = PROVIDER_NAMES[provider]
+  const links = CONSOLE_LINKS[provider]
+
+  /** 入力を変えた時。別の会社のキーなら、その会社のタブに切り替える */
+  const changeDraft = (value: string) => {
+    setDraft(value)
+    setCheck('idle')
+    const p = aiProviderOf(normalizeAiKey(value))
+    if (p) setProvider(p)
+  }
 
   /** 保存する前に、キーが使えるか確かめる。使えないキー（打ち間違い・無効）は保存しない */
   const checkAndSave = async () => {
@@ -56,9 +78,8 @@ export function AiCard({ shared, loggedIn }: Props) {
 
   const paste = async () => {
     try {
-      setDraft(normalizeAiKey(await navigator.clipboard.readText()))
+      changeDraft(normalizeAiKey(await navigator.clipboard.readText()))
       setPasteHint(false)
-      setCheck('idle')
     } catch {
       // 貼り付けを許可されなかった・使えないブラウザ。入力欄を長押しして貼り付けてもらう
       setPasteHint(true)
@@ -78,7 +99,8 @@ export function AiCard({ shared, loggedIn }: Props) {
       <p className="muted small">{t('ai.help')}</p>
       {key ? (
         <>
-          <p className="ok">✓ {t('ai.on', { tail: key.slice(-4) })}</p>
+          <p className="ok">✓ {t('ai.on', { provider: savedProvider ? PROVIDER_NAMES[savedProvider] : '?', tail: key.slice(-4) })}</p>
+          {savedProvider === 'gemini' && <p className="banner banner-caution small">{t('ai.gemini.freeNote')}</p>}
           <div className="row ai-actions">
             <button
               className="secondary"
@@ -101,23 +123,45 @@ export function AiCard({ shared, loggedIn }: Props) {
               {t('ai.remove')}
             </button>
           </div>
-          <span className="small">{link(CONSOLE_LINKS.limits, t('ai.limitsLink'))}</span>
+          {savedProvider && <span className="small">{link(CONSOLE_LINKS[savedProvider].limits, t(`ai.${savedProvider}.limitsLink`))}</span>}
         </>
       ) : (
         <>
+          {/* 使う AI を選ぶ。キーの取り方が会社ごとに違うため */}
+          <p className="field">{t('ai.providerLabel')}</p>
+          <div className="seg-tabs" role="tablist">
+            {AI_PROVIDERS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                role="tab"
+                aria-selected={provider === p}
+                className={provider === p ? 'on' : ''}
+                onClick={() => {
+                  setProvider(p)
+                  setCheck('idle')
+                }}
+              >
+                {PROVIDER_NAMES[p]}
+              </button>
+            ))}
+          </div>
+          <p className="muted small">{t(`ai.${provider}.desc`)}</p>
+          {provider === 'gemini' && <p className="banner banner-caution small">{t('ai.gemini.freeNote')}</p>}
           {/* キーの取り方。パソコンで1回入れれば、同期で全端末に配られる */}
           <div className="ai-steps">
             <p className="ai-steps-title">{t('ai.stepsTitle')}</p>
             <p className="muted small">{t('ai.stepsLead')}</p>
             <ol>
               <li>
-                {t('ai.step1')} {link(CONSOLE_LINKS.keys, t('ai.openConsole'))}
+                {t(`ai.${provider}.step1`)} {link(links.keys, t('ai.openConsole', { provider: name }))}
               </li>
               <li>
-                {t('ai.step2')} {link(CONSOLE_LINKS.billing, t('ai.openBilling'))}
+                {t(`ai.${provider}.step2`)}
+                {provider !== 'gemini' && <> {link(links.billing, t('ai.openBilling'))}</>}
               </li>
               <li>
-                {t('ai.step3')} {link(CONSOLE_LINKS.keys, t('ai.openKeys'))}
+                {t(`ai.${provider}.step3`)} {link(links.keys, t('ai.openKeys'))}
               </li>
               <li>{t('ai.step4')}</li>
             </ol>
@@ -130,7 +174,7 @@ export function AiCard({ shared, loggedIn }: Props) {
             }}
           >
             <label className="field" htmlFor="ai-key">
-              {t('ai.keyLabel')}
+              {t('ai.keyLabel', { provider: name })}
             </label>
             <div className="ai-key-row">
               <input
@@ -140,12 +184,9 @@ export function AiCard({ shared, loggedIn }: Props) {
                 autoComplete="off"
                 autoCapitalize="off"
                 spellCheck={false}
-                placeholder="sk-ant-..."
+                placeholder={KEY_PLACEHOLDERS[provider]}
                 value={draft}
-                onChange={(e) => {
-                  setDraft(e.target.value)
-                  setCheck('idle')
-                }}
+                onChange={(e) => changeDraft(e.target.value)}
                 onBlur={() => setDraft(cleaned)}
               />
               <button type="button" className="secondary" onClick={() => setShow(!show)} aria-pressed={show}>
@@ -157,6 +198,7 @@ export function AiCard({ shared, loggedIn }: Props) {
             </button>
             {pasteHint && <p className="muted small">{t('ai.pasteHint')}</p>}
             {cleaned !== '' && !valid && <p className="error small">{t('ai.wrongShape')}</p>}
+            {valid && aiProviderOf(cleaned) && <p className="muted small">{t('ai.detected', { provider: PROVIDER_NAMES[aiProviderOf(cleaned)!] })}</p>}
             <button className="primary" type="submit" disabled={!valid || check === 'busy'}>
               {check === 'busy' ? t('ai.checking') : t('ai.save')}
             </button>
@@ -169,6 +211,9 @@ export function AiCard({ shared, loggedIn }: Props) {
       {check === 'savedUnchecked' && <p className="muted">{t('ai.savedUnchecked')}</p>}
       {!loggedIn && <p className="banner banner-caution">{t('ai.needLogin')}</p>}
       <p className="muted small">{t('ai.note')}</p>
+      <p className="small">
+        ⚠️ {link(`./help.html?lang=${lang}#${lang === 'en' ? 'en' : 'ja'}-ai-caution`, t('ai.cautionLink'))}
+      </p>
     </section>
   )
 }

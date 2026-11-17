@@ -3,8 +3,8 @@ import { describeError } from '../errors.ts'
 import { isDesktop } from '../device.ts'
 import { useI18n } from '../i18n/useI18n.ts'
 import type { Quad, RGBAImage } from '../scan/document.ts'
-import { extractFields, type Extracted } from '../scan/extract.ts'
-import { recognize, type OcrProgress } from '../scan/ocr.ts'
+import type { Extracted } from '../scan/extract.ts'
+import { recognizeCard, type OcrProgress } from '../scan/ocr.ts'
 import { canvasToJpeg, findDocument, loadPhoto, makeDocument, toCanvas } from '../scan/scanImage.ts'
 import { CameraModal } from '../components/CameraModal.tsx'
 import { ScanModal } from '../components/ScanModal.tsx'
@@ -91,11 +91,13 @@ export function useCardScan({ onPhoto, onOcr, onMessage, onRetake, aiKey, doneTe
     setStage({ kind: 'processing' })
     // 補正の計算で画面が固まる前に、「補正しています」を表示させる
     await new Promise((r) => setTimeout(r, 30))
-    let canvas: HTMLCanvasElement
+    // 保存する写真はカラー、OCR には白黒の書類風画像を使う
+    let ocrCanvas: HTMLCanvasElement
     let photo: Blob
     try {
-      canvas = toCanvas(makeDocument(image, quad, rotation))
-      photo = await canvasToJpeg(canvas)
+      const doc = makeDocument(image, quad, rotation)
+      ocrCanvas = toCanvas(doc.gray)
+      photo = await canvasToJpeg(toCanvas(doc.color))
       onPhoto(photo)
     } catch (e) {
       console.error('[scan-process]', e)
@@ -124,8 +126,8 @@ export function useCardScan({ onPhoto, onOcr, onMessage, onRetake, aiKey, doneTe
     }
     setStage({ kind: 'ocr', progress: { phase: 'loading', progress: 0 } })
     try {
-      const result = await recognize(canvas, (progress) => setStage({ kind: 'ocr', progress }))
-      onOcr(result.text, extractFields(result.lines))
+      const result = await recognizeCard(ocrCanvas, (progress) => setStage({ kind: 'ocr', progress }))
+      onOcr(result.text, result.fields)
       onMessage({ kind: 'ok', text: fellBack ? `${fellBack} ${done}` : done })
     } catch (e) {
       console.error('[ocr]', e)

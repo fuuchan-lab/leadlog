@@ -7,7 +7,12 @@ export interface OcrLine {
   text: string
   /** 文字の高さ（ピクセル）。大きい文字ほど名前・会社名である可能性が高い */
   height: number
+  /** OCR の自信の度合い（0〜100）。低い行は、ロゴや模様を文字と読み違えたものが多い */
+  confidence?: number
 }
+
+/** 名前の候補にしない、OCR の自信の低さ */
+const LOW_CONFIDENCE = 40
 
 export interface Extracted {
   name: string
@@ -284,7 +289,9 @@ function cleanCompany(line: string): string {
 }
 
 export function extractFields(input: OcrLine[]): Extracted {
-  const lines = input.map((l) => ({ text: normalizeLine(l.text), height: l.height })).filter((l) => l.text.length > 0)
+  const lines = input
+    .map((l) => ({ text: normalizeLine(l.text), height: l.height, confidence: l.confidence }))
+    .filter((l) => l.text.length > 0)
   const texts = lines.map((l) => l.text)
 
   const email = findEmail(texts)
@@ -312,6 +319,8 @@ export function extractFields(input: OcrLine[]): Extracted {
   const maxHeight = Math.max(1, ...lines.map((l) => l.height))
   for (const l of lines) {
     if (l === companyLine || isContactLine(l.text)) continue
+    // ロゴや模様を読み違えた行（自信が低い）は、名前にしない
+    if (l.confidence !== undefined && l.confidence < LOW_CONFIDENCE) continue
     let text = trimJunk(stripNameLabel(l.text))
     const t = findTitle(text)
     if (t) text = trimJunk(removeTitle(text, t))
@@ -337,4 +346,13 @@ export function extractFields(input: OcrLine[]): Extracted {
   const name = best && best.score > 1 ? best.text : ''
 
   return { name, company, department, title, prefecture, city, phone, email }
+}
+
+/** 1回目の結果で空いている項目だけを、2回目の結果で埋める（1回目で読めた項目は変えない） */
+export function mergeMissing(first: Extracted, second: Extracted): Extracted {
+  const out = { ...first }
+  for (const k of Object.keys(out) as (keyof Extracted)[]) if (!out[k] && second[k]) out[k] = second[k]
+  // 市区町村は、都道府県が同じ時だけ埋める（別の住所の市区町村を組み合わせないため）
+  if (!first.city && first.prefecture && second.prefecture !== first.prefecture) out.city = ''
+  return out
 }

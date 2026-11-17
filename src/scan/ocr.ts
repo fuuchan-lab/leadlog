@@ -4,7 +4,7 @@
  * 展示会場の回線が弱くても読み取れる（設定の「OCRの準備」で、事前にダウンロードしておける）。
  */
 import type { Worker } from 'tesseract.js'
-import type { OcrLine } from './extract.ts'
+import { extractFields, mergeMissing, type Extracted, type OcrLine } from './extract.ts'
 
 export interface OcrProgress {
   /** 'loading' はデータの準備中、'recognizing' は読み取り中 */
@@ -18,6 +18,8 @@ type Listener = (p: OcrProgress) => void
 let workerPromise: Promise<Worker> | null = null
 let listener: Listener | null = null
 let ready = false
+/** 読み方（ページの分け方）の番号。tesseract.js を読み込んだ後に入る */
+let psm: { column: string; sparse: string } | null = null
 
 function getWorker(): Promise<Worker> {
   workerPromise ??= (async () => {
@@ -32,6 +34,7 @@ function getWorker(): Promise<Worker> {
     // 文字の大きさがまちまちな1段の文章として読む（PSM 4）。名刺では、自動（PSM 3）より
     // 大きな氏名や会社名を読み落としにくい（合成した名刺30枚で、氏名 16/30 → 29/30）
     await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_COLUMN })
+    psm = { column: PSM.SINGLE_COLUMN, sparse: PSM.SPARSE_TEXT }
     ready = true
     return worker
   })().catch((e: unknown) => {
@@ -58,22 +61,48 @@ export interface OcrResult {
   lines: OcrLine[]
 }
 
-export async function recognize(image: HTMLCanvasElement, onProgress?: Listener): Promise<OcrResult> {
+export async function recognize(image: HTMLCanvasElement, onProgress?: Listener, sparse = false): Promise<OcrResult> {
   listener = onProgress ?? null
+  const worker = await getWorker()
   try {
-    const worker = await getWorker()
+    if (sparse && psm) await worker.setParameters({ tessedit_pageseg_mode: psm.sparse as never })
     const { data } = await worker.recognize(image, {}, { text: true, blocks: true })
     const lines: OcrLine[] = []
     for (const block of data.blocks ?? []) {
       for (const para of block.paragraphs) {
         for (const line of para.lines) {
           const text = line.text.replace(/\n/g, ' ').trim()
-          if (text) lines.push({ text, height: line.rowAttributes?.rowHeight || line.bbox.y1 - line.bbox.y0 })
+          if (text) {
+            lines.push({
+              text,
+              height: line.rowAttributes?.rowHeight || line.bbox.y1 - line.bbox.y0,
+              confidence: line.confidence,
+            })
+          }
         }
       }
     }
     return { text: data.text.trim(), lines }
   } finally {
+    if (sparse && psm) await worker.setParameters({ tessedit_pageseg_mode: psm.column as never })
     listener = null
+  }
+}
+
+/**
+ * 名刺を読み取って、項目を取り出す。
+ * ふつうは1回（PSM 4: 1段の文章として読む）で済ませる。氏名か会社名が見つからない時だけ、
+ * 文字がまばらに散った名刺向けの読み方（PSM 11）でもう一度読み、空いている項目だけを埋める
+ */
+export async function recognizeCard(image: HTMLCanvasElement, onProgress?: Listener): Promise<{ text: string; fields: Extracted }> {
+  const first = await recognize(image, onProgress)
+  const fields = extractFields(first.lines)
+  if (fields.name && fields.company) return { text: first.text, fields }
+  try {
+    const second = await recognize(image, onProgress, true)
+    return { text: first.text, fields: mergeMissing(fields, extractFields(second.lines)) }
+  } catch (e) {
+    console.error('[ocr-second-pass]', e)
+    return { text: first.text, fields }
   }
 }

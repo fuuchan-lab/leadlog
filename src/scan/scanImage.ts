@@ -4,6 +4,7 @@ import {
   detectDocument,
   refineQuad,
   enhanceDocument,
+  enhanceDocumentColor,
   outputSize,
   rotate90,
   scaleQuad,
@@ -16,6 +17,8 @@ import {
 const LOAD_MAX_SIDE = 2400
 /** 四隅を探す時の長辺。小さくして速くする */
 const DETECT_MAX_SIDE = 360
+/** OCR に渡す画像の長辺の下限。名刺の小さい文字（住所など）が、OCR の読みやすい大きさになる */
+const OCR_MIN_SIDE = 1600
 /** 見つけた四隅を、正確に合わせ直す時の長辺 */
 const REFINE_MAX_SIDE = 1000
 
@@ -78,10 +81,20 @@ export function findDocument(img: RGBAImage): { quad: Quad; found: boolean } {
   return { quad: scaleQuad(refined, 1 / sm), found: true }
 }
 
-/** 四隅の範囲を長方形に直し、書類のように整え、向きを直す */
-export function makeDocument(img: RGBAImage, quad: Quad, rotation: number): RGBAImage {
-  const { width, height } = outputSize(quad)
-  return rotate90(enhanceDocument(warpQuad(img, quad, width, height)), rotation)
+/**
+ * 四隅の範囲を長方形に直し、向きを直す。
+ * color は保存・表示用のカラー画像、gray は文字の読み取り（OCR）用の白黒の書類風画像
+ */
+export function makeDocument(img: RGBAImage, quad: Quad, rotation: number): { color: RGBAImage; gray: RGBAImage } {
+  const size = outputSize(quad)
+  const warped = warpQuad(img, quad, size.width, size.height)
+  // OCR 用は、小さく写った名刺でも長辺 OCR_MIN_SIDE まで引き伸ばす（元の写真から補間するので、後で拡大するよりきれい）
+  const ocrSize = outputSize(quad, OCR_MIN_SIDE, OCR_MIN_SIDE)
+  const forOcr = ocrSize.width > size.width ? warpQuad(img, quad, ocrSize.width, ocrSize.height) : warped
+  return {
+    color: rotate90(enhanceDocumentColor(warped), rotation),
+    gray: rotate90(enhanceDocument(forOcr), rotation),
+  }
 }
 
 export function canvasToJpeg(canvas: HTMLCanvasElement, quality = 0.85): Promise<Blob> {

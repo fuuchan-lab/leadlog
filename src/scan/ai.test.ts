@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { aiChanges, toAiResult } from './ai.ts'
+import { aiChanges, parseAiJson, toAiResult } from './ai.ts'
 
 test('AI の答えを入力欄の形にそろえる', () => {
   const r = toAiResult({
@@ -32,4 +32,10 @@ test('再解析で変わる項目だけを選ぶ（AI が空・同じ値の項�
   const current = { name: '山田 大郎', company: '株式会社サンプル', department: '営業部', title: '', prefecture: '', city: '', phone: '03-1234-5678', email: 'x@example.com' }
   const found = { name: '山田 太郎', company: '株式会社サンプル', department: '', title: '課長', prefecture: '東京都', city: '', phone: '03-1234-5678', email: 'x@example.com' }
   assert.deepEqual(aiChanges(current, found), ['name', 'title', 'prefecture'])
+})
+
+test('AI の答えの JSON を、```json で囲まれていても読む', () => {
+  assert.deepEqual(parseAiJson('{"name":"山田 太郎"}'), { name: '山田 太郎' })
+  assert.deepEqual(parseAiJson('```json\n{"name":"山田 太郎"}\n```'), { name: '山田 太郎' })
+  assert.throws(() => parseAiJson('読めませんでした'))
 })

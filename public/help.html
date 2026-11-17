@@ -124,7 +124,7 @@
             <li><a href="#ja-excel">Excel に書き出す</a></li>
             <li><a href="#ja-howto">活用のコツ（展示会の前・会期中・後）</a></li>
             <li><a href="#ja-trouble">困ったとき</a></li>
-            <li><a href="#ja-privacy">データと AI について</a></li>
+            <li><a href="#ja-privacy">データと AI について</a>（<a href="#ja-ai-caution">AI を使うときの注意</a>）</li>
           </ol>
         </nav>
 
@@ -167,13 +167,15 @@
           </p>
           <h3>⑦ AI で読み取る（任意・おすすめ）</h3>
           <p>
-            設定 →「AIで読み取る（Claude）」に Anthropic の API キーを入れると、名刺・バッジを AI で読み取ります。
+            設定 →「AIで読み取る」に、Gemini（Google）・OpenAI・Claude（Anthropic）のどれかの API キーを入れると、名刺・バッジを AI で読み取ります。
             端末の中の OCR より、<strong>氏名</strong>の読み取りや、会社名・部署・役職の振り分けがずっと正確になります。
             キーは1台で入れれば、同期で全端末に配られます。<kbd>接続を確かめる</kbd>で使えるか確認できます。
           </p>
           <ul>
-            <li>キーは <a href="https://console.anthropic.com" target="_blank" rel="noopener">Anthropic Console</a> で作ります。料金は読み取り1枚あたり数円程度で、キーを作ったアカウントに請求されます。</li>
-            <li>LeadLog 専用のキーを作り、Console で<strong>利用上限（月の上限額）</strong>を設定しておくと安心です。不要になったら Console でキーを無効にしてください。</li>
+            <li>キーは <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>（Gemini・無料枠あり）、<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a>（有料）、<a href="https://console.anthropic.com" target="_blank" rel="noopener">Anthropic Console</a>（有料）のどれかで作ります。設定画面で使う AI を選ぶと、キーの作り方が表示されます。料金はキーを作ったアカウントに請求されます（1枚あたり数円以下）。</li>
+            <li>ChatGPT Plus や Google AI Pro などの月額プランは、このアプリからは使えません。API キーは別に作ります。</li>
+            <li><strong>Gemini の無料枠では、送った画像が Google の製品改善に使われ、人が見ることもあります。</strong>名刺は相手の方の個人情報なので、会社で使う場合は請求先を登録した有料枠のキーをお使いください。</li>
+            <li>LeadLog 専用のキーを作り、<strong>利用上限（月の上限額）</strong>を設定しておくと安心です。不要になったらキーを無効にしてください。</li>
             <li>読み取りの時に送るのは、補正した名刺1枚の画像だけです。扱いは下の「<a href="#ja-privacy">データと AI について</a>」をご覧ください。</li>
           </ul>
         </section>
@@ -300,8 +302,8 @@
             <li>四隅がずれていたら、丸をドラッグして直してから読み取ります。</li>
             <li>写真がぶれている・暗いときは <kbd>📷 再撮影</kbd>。上の「きれいに読み取るコツ」も参考に。</li>
             <li>読み取れなかった項目は、手で入力してください。</li>
-            <li>氏名がうまく読めない場合は、設定の「AIで読み取る（Claude）」を使うと大きく改善します。</li>
-            <li>「AIのAPIキーが使えなかった」と出る場合は、設定の <kbd>接続を確かめる</kbd>で確認し、キーを入れ直してください（Console でキーが無効になっている・利用上限に達している、なども原因になります）。</li>
+            <li>氏名がうまく読めない場合は、設定の「AIで読み取る」を使うと大きく改善します。</li>
+            <li>「AIのAPIキーが使えなかった」と出る場合は、設定の <kbd>接続を確かめる</kbd>で確認し、キーを入れ直してください（キーが無効になっている・利用上限や無料枠の上限に達している、なども原因になります）。</li>
           </ul>
           <h3>パソコンのカメラで撮ると、名刺までぼやける</h3>
           <p>
@@ -334,8 +336,30 @@
           <ul>
             <li>送るのは、<strong>読み取る名刺・バッジ1枚の補正後の画像だけ</strong>です（名刺の範囲に切り抜き、撮影場所などの位置情報は含みません）。</li>
             <li>登録済みのリード、メモ、登録者名、端末や Google アカウントの情報は<strong>送りません</strong>。</li>
-            <li>端末から Anthropic の API へ暗号化通信（HTTPS）で直接送り、ほかのサーバーは通りません。</li>
-            <li>Anthropic の商用利用規約では、API で送った内容は AI の学習に使われないとされています。保存期間などは Anthropic の規約・プライバシーポリシーに従います。</li>
+            <li>端末から、キーを作った会社の API（Google・OpenAI・Anthropic）へ暗号化通信（HTTPS）で直接送り、ほかのサーバーは通りません。</li>
+            <li>送った内容の扱いは、各社の API の規約・プライバシーポリシーに従います。OpenAI・Anthropic の API と、Gemini の有料枠では、送った内容は AI の学習・製品改善に使われないとされています。<strong>Gemini の無料枠では、製品改善に使われ、人が見ることもあります。</strong></li>
+          </ul>
+          <h3 id="ja-ai-caution">AI を使うときの注意</h3>
+          <p>AI で読み取ると、名刺の画像（相手の方の個人情報）が、キーを作った会社のサーバーに送られます。各社の規約上の扱いは、おおむね次のとおりです（2026年時点。規約は変わることがあるので、正式に判断する前に各社の最新の規約を確認してください）。</p>
+          <table>
+            <tr><th></th><th>Claude（Anthropic）・OpenAI</th><th>Gemini 有料枠</th><th>Gemini 無料枠</th></tr>
+            <tr><th>AI の学習・製品改善に使われるか</th><td>使われない</td><td>使われない</td><td><strong>使われる</strong></td></tr>
+            <tr><th>人が見ることがあるか</th><td>不正利用の疑いで自動の判定に引っかかった時だけ、担当者が確認することがある</td><td>同左</td><td><strong>製品改善のために見ることがある</strong></td></tr>
+            <tr><th>送った画像が残る期間</th><td>不正利用の監視のため、一定期間（目安30日程度）残り、その後削除される</td><td>同左</td><td>規約による</td></tr>
+          </table>
+          <ul>
+            <li><strong>「学習に使われない」と「どこにも残らない」は別のことです。</strong>送った画像は一定期間、各社のサーバーに残ります。各社のサーバーが攻撃されるおそれは、どのクラウドサービスとも同じく、ゼロではありません。</li>
+            <li><strong>API キーの管理に気を付けてください。</strong>キーは共有の Google アカウントのドライブと各端末に保存されるため、共有アカウントにログインできる人はキーを取り出せます。キーが漏れると、会社の料金で他人に使われるおそれがあります（過去に送った名刺の画像を、キーで取り出すことはできません）。
+              <ul>
+                <li>LeadLog 専用のキーを作る</li>
+                <li>月の利用上限（上限額）を設定する</li>
+                <li>展示会が終わったら、キーを無効にする（または設定の <kbd>キーを削除</kbd>）</li>
+                <li>共有アカウントのパスワードを、使う人以外に教えない</li>
+              </ul>
+            </li>
+            <li><strong>会社で使う前に、個人情報の担当の方に確認してください。</strong>「名刺の画像を海外の AI の会社に送る。規約上は学習に使われず、一定期間で削除される」という扱いでよいかを確認すると安心です。</li>
+            <li>より厳しい管理が必要な場合は、各社と「データを保存しない（Zero Data Retention）」契約を結べることがあります。</li>
+            <li>名刺の画像を端末の外に一切出したくない場合は、AI を使わず、端末の中の OCR だけで使ってください（設定で <kbd>キーを削除</kbd>）。</li>
           </ul>
           <h3>情報を守るための仕組み</h3>
           <ul>
@@ -345,7 +369,7 @@
           </ul>
           <div class="note">
             会社の方針で、外部の AI に個人情報を送ることに制限がある場合は、情報システム・個人情報の担当の方に確認してから使ってください。
-            より厳しい管理が必要な場合、Anthropic と「データを保存しない（Zero Data Retention）」契約を結べることがあります。
+            会社で使う場合は、Gemini の無料枠は避け、有料の API キーをお使いください。より厳しい管理が必要な場合、各社と「データを保存しない（Zero Data Retention）」契約を結べることがあります。
           </div>
           <p>詳しくは <a href="./privacy.html">プライバシーポリシー</a>をご覧ください。</p>
         </section>
@@ -413,7 +437,7 @@
           <h2>5. Making the most of it</h2>
           <ul>
             <li><strong>Before the show</strong>: create the show (copy last year's), register the products you exhibit as areas of interest, agree on what each priority level means.</li>
-            <li><strong>Before the show</strong> (optional, recommended): enter an Anthropic API key under Settings → "Read with AI (Claude)" to read cards with AI. Names and the company/department/title fields are read far more accurately. Create a dedicated key with a monthly spend limit in the <a href="https://console.anthropic.com" target="_blank" rel="noopener">Anthropic Console</a>.</li>
+            <li><strong>Before the show</strong> (optional, recommended): enter an API key from Gemini (Google), OpenAI or Claude (Anthropic) under Settings → "Read with AI" to read cards with AI. Names and the company/department/title fields are read far more accurately. Create a dedicated key with a monthly spend limit in <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> (free tier available), the <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a> or the <a href="https://console.anthropic.com" target="_blank" rel="noopener">Anthropic Console</a>. Subscriptions such as ChatGPT Plus or Google AI Pro cannot be used. <strong>On the Gemini free tier, images are used to improve Google products and may be seen by people</strong>; for business use, use a paid-tier key.</li>
             <li><strong>During the show</strong>: add each lead right after the conversation, write notes with <strong>BANT</strong> (Budget, Authority, Needs, Timeframe), set next steps with an owner and due date for hot leads, and use the dashboard to adjust staffing.</li>
             <li><strong>After the show</strong>: export to Excel, follow up by priority, clean up possible duplicates, and track next steps.</li>
           </ul>
@@ -434,7 +458,7 @@
               close — try about 20-30cm (8-12in) away so the camera can focus.
             </li>
             <li>Leads from others not showing: check that the button glows green, tap <kbd>Sync now</kbd>, and check the open show (use <kbd>All shows</kbd> in the list).</li>
-            <li>Names read badly: turn on "Read with AI (Claude)" in Settings. If you see "the AI API key did not work", use <kbd>Test connection</kbd> and re-enter the key.</li>
+            <li>Names read badly: turn on "Read with AI" in Settings. If you see "the AI API key did not work", use <kbd>Test connection</kbd> and re-enter the key.</li>
             <li>Data is stored only on your devices and in your Google Drive. See the <a href="./privacy.html">Privacy Policy</a>.</li>
           </ul>
         </section>
@@ -442,10 +466,32 @@
         <section>
           <h2>7. Data and AI</h2>
           <ul>
-            <li>With AI reading on, <strong>only the corrected image of the one card being read</strong> is sent, directly from your device to Anthropic's API over HTTPS (cropped to the card, no location data). Saved leads, notes, staff names, device and Google account information are never sent.</li>
-            <li>Under Anthropic's Commercial Terms, content sent through the API is not used to train its models; retention follows Anthropic's terms and privacy policy.</li>
+            <li>With AI reading on, <strong>only the corrected image of the one card being read</strong> is sent, directly from your device to the API of the company that issued the key (Google, OpenAI or Anthropic) over HTTPS (cropped to the card, no location data). Saved leads, notes, staff names, device and Google account information are never sent.</li>
+            <li>Handling follows each company's API terms and privacy policy. The OpenAI and Anthropic APIs, and the Gemini paid tier, do not use the content to train or improve their models. <strong>The Gemini free tier does use it to improve products, and people may see it.</strong></li>
             <li>While AI reading is set up, the web version shows <strong>no ads</strong>, so ad scripts cannot reach the key or scanned content. Only the last 4 characters of the key are shown.</li>
-            <li>Remove the key in Settings to go back to on-device OCR on every device. If your company restricts sending personal data to external AI, check with your IT or privacy team first; Anthropic may offer Zero Data Retention agreements.</li>
+            <li>Remove the key in Settings to go back to on-device OCR on every device. If your company restricts sending personal data to external AI, check with your IT or privacy team first. For business use, avoid the Gemini free tier; providers may offer Zero Data Retention agreements.</li>
+          </ul>
+          <h3 id="en-ai-caution">Cautions when using AI</h3>
+          <p>When AI reading is on, the card image (another person's personal data) is sent to the servers of the company that issued the key. Under each company's terms the handling is roughly as follows (as of 2026; terms can change, so check each company's current terms before making a formal decision).</p>
+          <table>
+            <tr><th></th><th>Claude (Anthropic) / OpenAI</th><th>Gemini paid tier</th><th>Gemini free tier</th></tr>
+            <tr><th>Used to train or improve AI?</th><td>No</td><td>No</td><td><strong>Yes</strong></td></tr>
+            <tr><th>Can people see it?</th><td>Only when automated checks flag possible misuse, staff may review it</td><td>Same</td><td><strong>May be reviewed to improve products</strong></td></tr>
+            <tr><th>How long images are kept</th><td>Kept for a limited time (around 30 days) for abuse monitoring, then deleted</td><td>Same</td><td>Per the terms</td></tr>
+          </table>
+          <ul>
+            <li><strong>"Not used for training" is not the same as "never stored".</strong> Images stay on the provider's servers for a while. As with any cloud service, the risk of the provider being breached is not zero.</li>
+            <li><strong>Take care of the API key.</strong> The key is stored in the shared Google account's Drive and on each device, so anyone who can log in to the shared account can extract it. A leaked key can be used by others at your company's expense (past card images cannot be retrieved with the key).
+              <ul>
+                <li>Create a key just for LeadLog</li>
+                <li>Set a monthly spend limit</li>
+                <li>Disable the key after the show (or use <kbd>Remove key</kbd> in Settings)</li>
+                <li>Do not share the shared account's password beyond the people who use it</li>
+              </ul>
+            </li>
+            <li><strong>Check with your privacy team before business use</strong>: confirm that sending card images to an overseas AI company, not used for training under its terms and deleted after a period, is acceptable.</li>
+            <li>For stricter control, providers may offer Zero Data Retention agreements.</li>
+            <li>If card images must never leave the device, use on-device OCR only (use <kbd>Remove key</kbd> in Settings).</li>
           </ul>
         </section>
         <a class="back" href="./">← Back to the app</a>

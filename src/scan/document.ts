@@ -645,11 +645,15 @@ export function scaleQuad(q: Quad, s: number): Quad {
 
 const dist = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y)
 
-/** 補正後の画像の大きさ。四辺の長さから決め、長辺は maxSide 以内にする */
-export function outputSize(q: Quad, maxSide = 1600): { width: number; height: number } {
+/**
+ * 補正後の画像の大きさ。四辺の長さから決め、長辺は maxSide 以内にする。
+ * minSide を指定すると、それより小さい時は（最大3倍まで）引き伸ばす（小さく写った名刺の文字を OCR で読みやすくする）
+ */
+export function outputSize(q: Quad, maxSide = 1600, minSide = 0): { width: number; height: number } {
   const w = Math.max(dist(q[0], q[1]), dist(q[3], q[2]))
   const h = Math.max(dist(q[0], q[3]), dist(q[1], q[2]))
-  const s = Math.min(1, maxSide / Math.max(w, h, 1))
+  const long = Math.max(w, h, 1)
+  const s = long < minSide ? Math.min(3, minSide / long) : Math.min(1, maxSide / long)
   return { width: Math.max(1, Math.round(w * s)), height: Math.max(1, Math.round(h * s)) }
 }
 
@@ -762,6 +766,8 @@ export function boxBlur(gray: Uint8Array, width: number, height: number, r: numb
 /**
  * 書類のように整える。照明のムラ（影・反射）を、周りの明るさで割って消し、
  * 背景をほぼ白、文字をはっきり黒くなるようにコントラストを広げる。白黒（グレー）の画像になる。
+ * 濃い色の帯や地に白抜きで書かれた文字（名刺によくある）は、白黒を反転して黒い文字にする
+ * （そのままだと、帯も白い文字もまとめて白くなって消えてしまうため）。
  */
 export function enhanceDocument(img: RGBAImage): RGBAImage {
   const { width, height } = img
@@ -769,9 +775,21 @@ export function enhanceDocument(img: RGBAImage): RGBAImage {
   // 文字より十分大きい範囲の明るさを「背景の明るさ」とみなす
   const r = Math.max(8, Math.round(Math.max(width, height) / 20))
   const bg = boxBlur(gray, width, height, r)
+  // 紙の地の明るさ（書類は大半が紙なので、背景の明るさの真ん中）
+  const bgHist = new Array<number>(256).fill(0)
+  for (const v of bg) bgHist[Math.min(255, Math.round(v))]++
+  const paper = Math.max(1, percentile(bgHist, bg.length * 0.5))
+  // 濃い地の部分: 周りの 6 割以上が、紙よりずっと暗い画素。太い大きな文字（氏名など）は、
+  // 周りに紙の地が十分あるので当たらない。紙そのものが暗い（黒い名刺）なら全体を反転する
+  const darkMask = new Uint8Array(gray.length)
+  for (let i = 0; i < gray.length; i++) darkMask[i] = gray[i] < paper * 0.5 ? 255 : 0
+  const darkFrac = paper < 90 ? null : boxBlur(darkMask, width, height, r)
   const norm = new Uint8Array(width * height)
   for (let i = 0; i < norm.length; i++) {
-    norm[i] = Math.min(255, Math.round((gray[i] / Math.max(1, bg[i])) * 235))
+    const inverted = darkFrac === null || darkFrac[i] > 0.6 * 255
+    norm[i] = inverted
+      ? Math.min(255, Math.round(((255 - gray[i]) / Math.max(1, 255 - bg[i])) * 235))
+      : Math.min(255, Math.round((gray[i] / Math.max(1, bg[i])) * 235))
   }
   // 暗い側 2% を黒に、背景の明るさ（書類は大半が背景なので、全体の真ん中の明るさ）より明るい部分を白にそろえる
   const hist = new Array<number>(256).fill(0)
@@ -788,6 +806,27 @@ export function enhanceDocument(img: RGBAImage): RGBAImage {
   const out = new Uint8ClampedArray(width * height * 4)
   for (let i = 0, p = 0; i < norm.length; i++, p += 4) {
     out[p] = out[p + 1] = out[p + 2] = lut[norm[i]]
+    out[p + 3] = 255
+  }
+  return { data: out, width, height }
+}
+
+/**
+ * 保存用のカラー版。照明のムラ（影・反射）は {@link enhanceDocument} と同じく周りの明るさで割って消すが、
+ * 色（赤・緑・青）はそのまま残す。背景（紙の地）はほぼ白に近づくが、ロゴや色付きの文字・地色は保たれる。
+ */
+export function enhanceDocumentColor(img: RGBAImage): RGBAImage {
+  const { width, height, data } = img
+  const gray = toGray(img)
+  const r = Math.max(8, Math.round(Math.max(width, height) / 20))
+  const bg = boxBlur(gray, width, height, r)
+  const out = new Uint8ClampedArray(width * height * 4)
+  for (let i = 0, p = 0; i < gray.length; i++, p += 4) {
+    // 背景の明るさが 245 になるように、全体を同じ倍率で明るく（暗く）する。色の比率は変わらない
+    const gain = 245 / Math.max(1, bg[i])
+    out[p] = data[p] * gain
+    out[p + 1] = data[p + 1] * gain
+    out[p + 2] = data[p + 2] * gain
     out[p + 3] = 255
   }
   return { data: out, width, height }

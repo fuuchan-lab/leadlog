@@ -6,6 +6,7 @@ import {
   detectQuad,
   refineQuad,
   enhanceDocument,
+  enhanceDocumentColor,
   homography,
   outputSize,
   rotate90,
@@ -235,4 +236,78 @@ test('四隅を大きい画像で合わせ直すと、1.5 画素以内に合う�
   // 大まかな四隅（10 画素ほどずれている）から合わせ直す
   const rough = card.map((p, i) => ({ x: p.x + (i % 2 ? 8 : -9), y: p.y + (i < 2 ? 7 : -6) })) as Quad
   assertNear(refineQuad(img, rough), card, 1.5)
+})
+
+test('カラー補正は、影を消しつつ色を残す', () => {
+  const w = 80
+  const h = 40
+  const img = solid(w, h, 0)
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const bg = 200 - x
+      const logo = y >= 18 && y <= 21 && x >= 20 && x <= 60
+      const p = (y * w + x) * 4
+      // ロゴは赤。それ以外は影のかかった白
+      img.data[p] = logo ? bg : bg
+      img.data[p + 1] = logo ? bg * 0.2 : bg
+      img.data[p + 2] = logo ? bg * 0.2 : bg
+    }
+  }
+  const out = enhanceDocumentColor(img)
+  const px = (x: number, y: number) => [0, 1, 2].map((c) => out.data[(y * w + x) * 4 + c])
+  const [r0, g0, b0] = px(75, 35)
+  assert.ok(r0 > 220 && g0 > 220 && b0 > 220, 'shadowed background should be near white')
+  const [r1, g1, b1] = px(40, 19)
+  assert.ok(r1 > g1 * 2 && r1 > b1 * 2, 'red logo should stay red')
+})
+
+test('濃い帯の白抜き文字は、反転して黒い文字にする（太い黒い文字はそのまま）', () => {
+  const w = 200
+  const h = 120
+  const img = solid(w, h, 240)
+  const set = (x: number, y: number, v: number) => {
+    const p = (y * w + x) * 4
+    img.data[p] = img.data[p + 1] = img.data[p + 2] = v
+  }
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      // 上の 50 行は紺色の帯。その中に白抜きの文字
+      if (y < 50) set(x, y, x >= 60 && x <= 140 && y >= 22 && y <= 27 ? 245 : 50)
+      // 下には、太い黒い文字（氏名など）
+      else if (x >= 70 && x <= 130 && y >= 80 && y <= 92 && x % 5 < 3) set(x, y, 20)
+    }
+  }
+  const out = enhanceDocument(img)
+  const at = (x: number, y: number) => out.data[(y * w + x) * 4]
+  assert.ok(at(100, 24) < 80, 'white text on the dark band should become dark')
+  assert.ok(at(30, 25) > 200, 'the dark band itself should become light')
+  assert.ok(at(101, 86) < 80, 'bold black text should stay dark')
+  assert.ok(at(100, 110) > 200, 'paper should stay white')
+})
+
+test('黒い名刺（全体が暗い）は、全体を反転する', () => {
+  const w = 80
+  const h = 40
+  const img = solid(w, h, 30)
+  for (let y = 18; y <= 21; y++) {
+    for (let x = 20; x <= 60; x++) {
+      const p = (y * w + x) * 4
+      img.data[p] = img.data[p + 1] = img.data[p + 2] = 230
+    }
+  }
+  const out = enhanceDocument(img)
+  const at = (x: number, y: number) => out.data[(y * w + x) * 4]
+  assert.ok(at(40, 19) < 80, 'white text should become dark')
+  assert.ok(at(5, 5) > 200, 'black card should become light')
+})
+
+test('小さく写った名刺は、OCR 用に引き伸ばせる', () => {
+  const q: Quad = [
+    { x: 0, y: 0 },
+    { x: 500, y: 0 },
+    { x: 500, y: 300 },
+    { x: 0, y: 300 },
+  ]
+  assert.deepEqual(outputSize(q), { width: 500, height: 300 })
+  assert.deepEqual(outputSize(q, 1600, 1600), { width: 1500, height: 900 }) // 3倍まで
 })

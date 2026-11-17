@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { extractFields, findAddress, findEmail, findPhone, normalizeLine } from './extract.ts'
+import { extractFields, findAddress, findEmail, findPhone, mergeMissing, normalizeLine } from './extract.ts'
 
 const lines = (texts: [string, number][]) => texts.map(([text, height]) => ({ text, height }))
 
@@ -120,4 +120,25 @@ test('よくある姓で始まる行を、名前として優先する', () => {
     ]),
   )
   assert.equal(r.name, '佐藤 花子')
+})
+
+test('2回目の読み取りで、空いている項目だけを埋める', () => {
+  const empty = { name: '', company: '', department: '', title: '', prefecture: '', city: '', phone: '', email: '' }
+  const first = { ...empty, company: '株式会社サンプル', prefecture: '東京都', phone: '03-1234-5678' }
+  const second = { ...empty, name: '山田 太郎', company: '株式会社サンブル', prefecture: '大阪府', city: '大阪市', phone: '06-0000-0000' }
+  const merged = mergeMissing(first, second)
+  assert.equal(merged.name, '山田 太郎')
+  assert.equal(merged.company, '株式会社サンプル') // 1回目のまま
+  assert.equal(merged.phone, '03-1234-5678')
+  assert.equal(merged.prefecture, '東京都')
+  assert.equal(merged.city, '') // 別の都道府県の市は使わない
+})
+
+test('OCR の自信が低い行は、名前にしない', () => {
+  const lines = [
+    { text: '株式会社サンプル', height: 30, confidence: 90 },
+    { text: '山田 太郎', height: 40, confidence: 20 },
+    { text: '鈴木 一郎', height: 36, confidence: 85 },
+  ]
+  assert.equal(extractFields(lines).name, '鈴木 一郎')
 })
