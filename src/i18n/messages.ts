@@ -191,6 +191,14 @@ export const ja = {
   'popup.title': 'リードの詳細',
   'popup.photoLoading': '画像を読み込んでいます…',
   'popup.photoMissing': '画像はまだこの端末にありません（ログインしてオンラインになると表示されます）。',
+  'share.button': 'メールで共有',
+  'share.fileName': '名刺',
+  'share.subject': '名刺の共有: {who}',
+  'share.subjectNoName': '名刺の共有',
+  'share.greeting': '展示会で交換した名刺を共有します。',
+  'share.address': '所在地',
+  'share.attached': '名刺の画像と連絡先（vCard）を添付しています。',
+  'share.downloaded': '名刺の画像と連絡先のファイルを保存しました。開いたメールに添付してください。',
 
   // 設定
   'leave.title': '変更を保存しますか？',
