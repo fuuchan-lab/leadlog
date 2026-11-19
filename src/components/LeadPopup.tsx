@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { authorLabel } from '../device.ts'
 import { formatDateTime } from '../format.ts'
 import { useI18n } from '../i18n/useI18n.ts'
 import type { MessageKey } from '../i18n/messages.ts'
 import { categoryLabel, type Category } from '../settings.ts'
+import { prepareShare, sendShare, type PreparedShare } from '../shareLead.ts'
 import type { Lead } from '../types.ts'
 import { LeadPhoto } from './LeadPhoto.tsx'
 
@@ -32,6 +33,26 @@ export function LeadPopup({ lead, importance, customerTypes, interests, nextActi
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
+
+  /** メールで共有する添付ファイルと本文。ボタンを押した時にすぐ共有の画面を開けるよう、先に作っておく */
+  const [share, setShare] = useState<{ id: string; data: PreparedShare } | null>(null)
+  const [shareNote, setShareNote] = useState('')
+  useEffect(() => {
+    let cancelled = false
+    void prepareShare(lead, t, lang).then((data) => {
+      if (!cancelled) setShare({ id: lead.id, data })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [lead, t, lang])
+  const prepared = share?.id === lead.id ? share.data : null
+  const onShare = async () => {
+    if (!prepared) return
+    setShareNote('')
+    const result = await sendShare(prepared)
+    if (result === 'downloaded') setShareNote(t('share.downloaded'))
+  }
 
   const rows: [MessageKey, string][] = [
     ['field.name', lead.name],
@@ -96,20 +117,22 @@ export function LeadPopup({ lead, importance, customerTypes, interests, nextActi
             <pre>{lead.ocrText}</pre>
           </details>
         )}
-        {(onEdit || onDelete) && (
-          <div className="row popup-actions">
-            {onDelete && (
-              <button className="danger-btn" onClick={onDelete}>
-                {t('common.delete')}
-              </button>
-            )}
-            {onEdit && (
-              <button className="primary" onClick={onEdit}>
-                {t('common.edit')}
-              </button>
-            )}
-          </div>
-        )}
+        <div className="row popup-actions">
+          <button className="secondary share-btn" disabled={!prepared} onClick={() => void onShare()}>
+            ✉ {t('share.button')}
+          </button>
+          {onDelete && (
+            <button className="danger-btn" onClick={onDelete}>
+            {t('common.delete')}
+            </button>
+          )}
+          {onEdit && (
+            <button className="primary" onClick={onEdit}>
+            {t('common.edit')}
+            </button>
+          )}
+        </div>
+        {shareNote && <p className="muted small">{shareNote}</p>}
       </div>
     </div>
   )

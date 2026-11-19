@@ -952,6 +952,10 @@ textarea.sticky::placeholder {
 .popup-actions button {
   min-width: 96px;
 }
+/* 共有は左に寄せ、削除・編集と離す */
+.popup-actions .share-btn {
+  margin-right: auto;
+}
 .chart-legend {
   justify-content: center;
   margin-top: 2px;
