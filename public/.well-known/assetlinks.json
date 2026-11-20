@@ -1,10 +1,26 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "net.doitmyself.leadlog",
       "sha256_cert_fingerprints": [
+        "87:7D:AA:12:A6:9B:09:BA:97:80:48:6D:86:67:CC:96:87:DB:34:2B:17:8E:A6:EC:B2:88:B7:10:F7:BD:F5:53",
+        "CA:19:8E:F6:B6:2C:55:ED:C8:F9:99:70:DC:38:9A:A4:8E:62:D4:9E:38:41:FF:C3:D8:A6:B2:FD:E6:65:B6:CC"
+      ]
+    }
+  },
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "net.doitmyself.leadlog.paid",
+      "sha256_cert_fingerprints": [
+        "E6:30:24:4A:F2:FB:61:A7:1B:B9:28:B7:C0:6A:61:55:4A:98:5A:F3:9F:AD:09:44:86:EE:71:CC:4A:9F:C0:2A",
         "87:7D:AA:12:A6:9B:09:BA:97:80:48:6D:86:67:CC:96:87:DB:34:2B:17:8E:A6:EC:B2:88:B7:10:F7:BD:F5:53"
       ]
     }
